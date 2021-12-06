@@ -22,4 +22,4 @@ do
 patch -i $a -s -f -p1
 done
 
-make bindeb-pkg -j CC=clang-12 LD=ld.lld AS=llvm-as-12 NM=llvm-nm-12 AR=llvm-ar-12
+make bindeb-pkg -j CC=clang-12 LD=ld.lld-12 AS=llvm-as-12 NM=llvm-nm-12 AR=llvm-ar-12
