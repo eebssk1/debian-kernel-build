@@ -1,6 +1,6 @@
 #!/bin/sh
 
-wget $(source)
+wget "$source"
 
 dpkg-deb --extract *.deb .
 tar -xf usr/src/linux-source-*.*
