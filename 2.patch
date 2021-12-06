@@ -1,0 +1,10 @@
+--- arch/x86/Makefile	2021-11-25 16:49:08.000000000 +0800
++++ arch/x86/Makefile	2021-12-06 18:13:22.051375966 +0800
+@@ -202,6 +202,7 @@
+ LDFLAGS_vmlinux += -z max-page-size=0x200000
+ endif
+ 
++LDFLAGS_vmlinux += $(call ld-option,--relax)
+ 
+ archscripts: scripts_basic
+ 	$(Q)$(MAKE) $(build)=arch/x86/tools relocs
