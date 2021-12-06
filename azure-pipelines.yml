@@ -13,6 +13,8 @@ steps:
 - task: Bash@3
   inputs:
     filePath: 'b.sh'
+    arguments: $(source)
+    workingDirectory: $(Build.SourcesDirectory)
 - task: CmdLine@2
   inputs:
     script: |
