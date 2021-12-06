@@ -9,19 +9,22 @@ trigger:
 pool:
   vmImage: ubuntu-latest
 
-steps:
-- task: Bash@3
-  inputs:
-    filePath: 'b.sh'
-    arguments: $(source)
-    workingDirectory: $(Build.SourcesDirectory)
-- task: CmdLine@2
-  inputs:
-    script: |
-      mkdir debs
-      cp *.deb debs/
-- task: PublishPipelineArtifact@1
-  inputs:
-    targetPath: '$(Pipeline.Workspace)/debs/'
-    artifact: 'deb'
-    publishLocation: 'pipeline'
+jobs: 
+- job: main
+  timeoutInMinutes: 0
+  steps:
+  - task: Bash@3
+    inputs:
+      filePath: 'b.sh'
+      arguments: $(source)
+      workingDirectory: $(Build.SourcesDirectory)
+  - task: CmdLine@2
+    inputs:
+      script: |
+        mkdir debs
+        cp *.deb debs/
+  - task: PublishPipelineArtifact@1
+    inputs:
+      targetPath: '$(Pipeline.Workspace)/debs/'
+      artifact: 'deb'
+      publishLocation: 'pipeline'
