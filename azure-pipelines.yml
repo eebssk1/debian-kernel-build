@@ -1,0 +1,25 @@
+# Starter pipeline
+# Start with a minimal pipeline that you can customize to build and deploy your code.
+# Add steps that build, run tests, deploy, and more:
+# https://aka.ms/yaml
+
+trigger:
+- main
+
+pool:
+  vmImage: ubuntu-latest
+
+steps:
+- task: Bash@3
+  inputs:
+    filePath: 'b.sh'
+- task: CmdLine@2
+  inputs:
+    script: |
+      mkdir debs
+      cp *.deb debs/
+- task: PublishPipelineArtifact@1
+  inputs:
+    targetPath: '$(Pipeline.Workspace)/debs/'
+    artifact: 'deb'
+    publishLocation: 'pipeline'
