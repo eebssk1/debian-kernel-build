@@ -28,6 +28,6 @@ jobs:
       - uses: actions/upload-artifact@v2.2.4
         with: 
           name: debs
-          path: $GITHUB_WORKSPACE/*.deb
+          path: ${{env.GITHUB_WORKSPACE}}/*.deb
       
       
