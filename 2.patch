@@ -9,11 +9,12 @@
          KBUILD_CFLAGS += $(cflags-y)
  
          KBUILD_CFLAGS += -mno-red-zone
-@@ -202,6 +202,7 @@
+@@ -202,6 +202,8 @@
  LDFLAGS_vmlinux += -z max-page-size=0x200000
  endif
  
 +LDFLAGS_vmlinux += $(call ld-option,--relax)
++LDFLAGS_vmlinux +=-O3
  
  archscripts: scripts_basic
  	$(Q)$(MAKE) $(build)=arch/x86/tools relocs
