@@ -2,7 +2,7 @@
 
 wget $1
 
-git clone https://github.com/kdrag0n/proton-clang
+git clone --depth 1 https://github.com/kdrag0n/proton-clang
 
 export PATH=${PWD}/proton-clang/bin:$PATH
 
