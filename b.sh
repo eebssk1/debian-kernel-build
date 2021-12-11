@@ -11,9 +11,7 @@ tar -xf usr/src/linux-source-*.*
 
 rm -rf *.deb usr
 
-#wget https://apt.llvm.org/llvm.sh
-#chmod +x llvm.sh
-#sudo ./llvm.sh 12
+wget https://salsa.debian.org/kernel-team/linux/-/raw/master/debian/certs/debian-uefi-certs.pem
 
 sudo apt install libelf-dev libssl-dev dwarves bc jitterentropy-rngd schedtool
 
@@ -21,9 +19,12 @@ cd $(find -type d -name linux-source-*)
 
 cp ../config .config
 
+mkdir -p debian/certs
+mv ../debian-uefi-certs.pem debian/certs/
+
 for a in ../*.patch
 do
 patch -i $a -s -f -p1
 done
-export KCFLAGS="-mllvm -polly"
-schedtool -B -e make bindeb-pkg -j2 CC=clang LD=ld.lld AS=llvm-as NM=llvm-nm AR=llvm-ar
+export KCFLAGS="-mllvm -polly-run-inliner -mllvm -polly-opt-fusion=max -mllvm -polly-ast-use-context -mllvm -polly-invariant-load-hoisting -funroll-loops"
+schedtool -B -e make bindeb-pkg -j3 CC=clang LLVM=1
