@@ -26,5 +26,5 @@ for a in ../*.patch
 do
 patch -i $a -s -f -p1
 done
-export KCFLAGS="-mllvm -polly-run-inliner -mllvm -polly-opt-fusion=max -mllvm -polly-ast-use-context -mllvm -polly-invariant-load-hoisting -funroll-loops"
+export KCFLAGS="-mllvm -polly-run-inliner -mllvm -polly-opt-fusion=max -mllvm -polly-ast-use-context -mllvm -polly-invariant-load-hoisting"
 schedtool -B -e make bindeb-pkg -j3 CC=clang LLVM=1
