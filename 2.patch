@@ -1,5 +1,5 @@
---- a/arch/x86/Makefile	2021-12-08 16:03:30.000000000 +0800
-+++ b/arch/x86/Makefile	2021-12-12 21:07:36.390084040 +0800
+--- a/arch/x86/Makefile	2022-01-16 16:14:24.000000000 +0800
++++ b/arch/x86/Makefile	2022-02-11 21:37:36.658483687 +0800
 @@ -126,7 +126,7 @@
                  $(call cc-option,-march=core2,$(call cc-option,-mtune=generic))
  	cflags-$(CONFIG_MATOM) += $(call cc-option,-march=atom) \

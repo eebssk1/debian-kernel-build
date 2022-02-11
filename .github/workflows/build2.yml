@@ -28,7 +28,7 @@ jobs:
       - uses: actions/checkout@v2
       - run: |
           cd $GITHUB_WORKSPACE
-          ./b2.sh "http://ftp.debian.org/debian/pool/main/l/linux/linux-source-5.10_5.10.84-1_all.deb"
+          ./b2.sh "http://ftp.debian.org/debian/pool/main/l/linux/linux-source-5.10_5.10.92-1_all.deb"
       - uses: actions/upload-artifact@v2.2.4
         with: 
           name: debs
