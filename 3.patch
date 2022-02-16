@@ -1,0 +1,22 @@
+--- a/kernel/Kconfig.hz	2022-02-17 02:49:06.242595197 +0800
++++ b/kernel/Kconfig.hz	2022-02-17 02:50:26.437447519 +0800
+@@ -40,6 +40,11 @@
+ 	 on SMP and NUMA systems and exactly dividing by both PAL and
+ 	 NTSC frame rates for video and multimedia work.
+ 
++	config HZ_600
++		bool "600 HZ"
++	help
++	 Balanced one.
++
+ 	config HZ_1000
+ 		bool "1000 HZ"
+ 	help
+@@ -53,6 +58,7 @@
+ 	default 100 if HZ_100
+ 	default 250 if HZ_250
+ 	default 300 if HZ_300
++	default 600 if HZ_600
+ 	default 1000 if HZ_1000
+ 
+ config SCHED_HRTICK
