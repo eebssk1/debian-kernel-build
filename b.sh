@@ -27,4 +27,5 @@ do
 patch -i $a -s -f -p1
 done
 export KCFLAGS="-mllvm -polly-run-inliner -mllvm -polly-opt-fusion=max -mllvm -polly-ast-use-context -mllvm -polly-invariant-load-hoisting"
-schedtool -B -e make bindeb-pkg -j3 CC=clang LLVM=1
+make oldconfig CC=clang LLVM=1
+schedtool -B -e make -j3 bindeb-pkg CC=clang LLVM=1
