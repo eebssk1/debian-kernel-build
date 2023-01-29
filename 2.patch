@@ -1,21 +1,12 @@
---- a/arch/x86/Makefile	2022-01-16 16:14:24.000000000 +0800
-+++ b/arch/x86/Makefile	2022-02-11 21:37:36.658483687 +0800
-@@ -126,7 +126,7 @@
-                 $(call cc-option,-march=core2,$(call cc-option,-mtune=generic))
- 	cflags-$(CONFIG_MATOM) += $(call cc-option,-march=atom) \
- 		$(call cc-option,-mtune=atom,$(call cc-option,-mtune=generic))
--        cflags-$(CONFIG_GENERIC_CPU) += $(call cc-option,-mtune=generic)
-+        cflags-$(CONFIG_GENERIC_CPU) += $(call cc-option,-mtune=skylake)
-         KBUILD_CFLAGS += $(cflags-y)
- 
-         KBUILD_CFLAGS += -mno-red-zone
-@@ -204,6 +204,9 @@
- LDFLAGS_vmlinux :=
+--- a/Makefile	2023-01-07 21:53:00.000000000 +0800
++++ b/Makefile	2023-01-29 14:44:37.312461505 +0800
+@@ -837,6 +837,9 @@
+ else ifdef CONFIG_CC_OPTIMIZE_FOR_SIZE
+ KBUILD_CFLAGS += -Os
+ KBUILD_RUSTFLAGS += -Copt-level=s
++else ifdef CONFIG_CC_OPTIMIZE_FOR_PERFORMANCE_O3
++KBUILD_CFLAGS += -O3
++KBUILD_RUSTFLAGS += -Copt-level=3
  endif
  
-+LDFLAGS_vmlinux += $(call ld-option,--relax)
-+LDFLAGS_vmlinux += -O2
-+
- #
- # The 64-bit kernel must be aligned to 2MB.  Pass -z max-page-size=0x200000 to
- # the linker to force 2MB page size regardless of the default page size used
+ # Always set `debug-assertions` and `overflow-checks` because their default

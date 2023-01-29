@@ -1,10 +1,15 @@
---- a/init/Kconfig	2022-01-18 23:54:31.000000000 +0800
-+++ b/init/Kconfig	2022-02-11 21:32:45.071541188 +0800
-@@ -1311,7 +1311,6 @@
+--- a/init/Kconfig	2023-01-07 18:12:04.000000000 +0800
++++ b/init/Kconfig	2023-01-29 14:41:41.502690912 +0800
+@@ -1414,6 +1414,12 @@
+ 	  with the "-O2" compiler flag for best performance and most
+ 	  helpful compile-time warnings.
  
- config CC_OPTIMIZE_FOR_PERFORMANCE_O3
- 	bool "Optimize more for performance (-O3)"
--	depends on ARC
++config CC_OPTIMIZE_FOR_PERFORMANCE_O3
++	bool "Optimize more for performance (-O3)"
++	help
++	  Choosing this option will pass "-O3" to your compiler to optimize
++	  the kernel yet more for performance.
++
+ config CC_OPTIMIZE_FOR_SIZE
+ 	bool "Optimize for size (-Os)"
  	help
- 	  Choosing this option will pass "-O3" to your compiler to optimize
- 	  the kernel yet more for performance.
