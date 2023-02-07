@@ -20,10 +20,6 @@ jobs:
 
     # Steps represent a sequence of tasks that will be executed as part of the job
     steps:
-      - name: Cleanup Disk
-        uses: curoky/cleanup-disk-action@v2.0
-        with:
-          retain: 'python'
       # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
       - uses: actions/checkout@v2
       - run: |
