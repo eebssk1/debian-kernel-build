@@ -22,6 +22,11 @@ jobs:
     steps:
       # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
       - uses: actions/checkout@v2
+      - name: enable ccache
+        uses: hendrikmuhs/ccache-action@v1.2.8
+        with:
+          verbose: 1
+          max-size: "940M"
       - run: |
           cd $GITHUB_WORKSPACE
           ./b.sh "http://ftp.debian.org/debian/pool/main/l/linux/linux-source-6.1_6.1.8-1_all.deb"
