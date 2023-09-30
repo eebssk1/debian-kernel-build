@@ -2,13 +2,16 @@ name: CI
 
 on:
   push:
-    branches: [ 6 ]
+    branches: [ "6" ]
   workflow_dispatch:
 
 jobs:
   build:
     runs-on: ubuntu-latest
     container: ghcr.io/eebssk1/bbk/debian-bookworm:0.1
+    strategy:
+      matrix:
+        target: [desktop, server_large, server_small, server_small_2]
 
     steps:
       - uses: actions/checkout@v2
@@ -17,10 +20,10 @@ jobs:
         with:
           verbose: 1
           max-size: "940M"
-      - run: |
-          curl -L "https://gitlab.com/xanmod/linux/-/archive/6.1.55-xanmod1.tar.bz2" | tar --bzip2 -xf -
-          ./b.sh
-      - uses: actions/upload-artifact@v2.2.4
+      - name: build
+        run: ./b.sh ${{ matrix.target }}
+      - name: upload
+        uses: actions/upload-artifact@v2.2.4
         with:
           name: debs
-          path: ./*.deb
+          path: "*.deb"

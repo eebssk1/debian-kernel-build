@@ -1,0 +1,20 @@
+--- include/linux/poison.h	2023-09-23 22:51:34.000000000 +0800
++++ include/linux/poison.h	2023-10-01 00:48:10.807498485 +0800
+@@ -27,7 +27,7 @@
+ #define TIMER_ENTRY_STATIC	((void *) 0x300 + POISON_POINTER_DELTA)
+ 
+ /********** mm/page_poison.c **********/
+-#define PAGE_POISON 0xaa
++#define PAGE_POISON 0x00
+ 
+ /********** mm/page_alloc.c ************/
+ 
+@@ -50,7 +50,7 @@
+ #define	POISON_END	0xa5	/* end-byte of poisoning */
+ 
+ /********** arch/$ARCH/mm/init.c **********/
+-#define POISON_FREE_INITMEM	0xcc
++#define POISON_FREE_INITMEM	0x00
+ 
+ /********** arch/ia64/hp/common/sba_iommu.c **********/
+ /*

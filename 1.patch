@@ -1,0 +1,10 @@
+--- net/ipv4/tcp.c	2023-09-23 22:51:34.000000000 +0800
++++ net/ipv4/tcp.c	2023-10-01 00:17:17.102296770 +0800
+@@ -1227,6 +1227,7 @@
+ 
+ 	flags = msg->msg_flags;
+ 
++	tp->nonagle |= TCP_NAGLE_OFF
+ 	if ((flags & MSG_ZEROCOPY) && size) {
+ 		skb = tcp_write_queue_tail(sk);
+ 
