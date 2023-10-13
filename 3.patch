@@ -1,15 +1,6 @@
 --- a/arch/x86/Makefile	2023-10-03 20:39:16.803332147 +0800
 +++ b/arch/x86/Makefile	2023-10-03 20:36:52.731900898 +0800
-@@ -62,7 +62,7 @@
- 
- # More compiler optimizations
- ifdef CONFIG_CC_OPTIMIZE_FOR_PERFORMANCE
--KBUILD_CFLAGS += -O3 -fexcess-precision=fast -freciprocal-math \
-+KBUILD_CFLAGS += -O3 -freciprocal-math \
- 		 $(call cc-option,-fcx-limited-range)
- KBUILD_RUSTFLAGS += -Copt-level=3
- endif
-@@ -200,7 +200,7 @@
+@@ -199,7 +199,7 @@
    KBUILD_CFLAGS += -mharden-sls=all
  endif
  
@@ -18,7 +9,7 @@
  
  ifdef CONFIG_LTO_CLANG
  ifeq ($(shell test $(CONFIG_LLD_VERSION) -lt 130000; echo $$?),0)
-@@ -220,7 +220,7 @@
+@@ -219,7 +219,7 @@
  # by the linker.
  #
  ifdef CONFIG_X86_64
