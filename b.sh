@@ -26,7 +26,7 @@ elif [ "$1" = "server_large" ]; then
 export KCFLAGS="$KCFLAGS -mtune=broadwell"
 cp ../config_serl .config || exit 1
 elif [ "$1" = "server_small" ]; then
-export KCFLAGS="$KCFLAGS -mtune=broadwell"
+export KCFLAGS="$KCFLAGS -mtune=skylake"
 cp ../config_serm .config || exit 1
 elif [ "$1" = "server_small_2" ]; then
 export KCFLAGS="$KCFLAGS -mtune=sandybridge"

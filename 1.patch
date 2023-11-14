@@ -1,10 +1,11 @@
---- a/net/ipv4/tcp.c	2023-09-23 22:51:34.000000000 +0800
-+++ b/net/ipv4/tcp.c	2023-10-01 00:17:17.102296770 +0800
-@@ -1227,6 +1227,7 @@
+--- a/net/ipv4/tcp.c	2023-11-14 13:53:35.376065984 +0800
++++ b/net/ipv4/tcp.c	2023-11-14 13:52:55.668750167 +0800
+@@ -460,6 +460,8 @@
+ 	tcp_scaling_ratio_init(sk);
  
- 	flags = msg->msg_flags;
- 
-+	tp->nonagle |= TCP_NAGLE_OFF;
- 	if ((flags & MSG_ZEROCOPY) && size) {
- 		skb = tcp_write_queue_tail(sk);
- 
+ 	set_bit(SOCK_SUPPORT_ZC, &sk->sk_socket->flags);
++	tp->nonagle = TCP_NAGLE_OFF;
++	icsk->icsk_ack.pingpong = TCP_PINGPONG_THRESH;
+ 	sk_sockets_allocated_inc(sk);
+ }
+ EXPORT_SYMBOL(tcp_init_sock);
