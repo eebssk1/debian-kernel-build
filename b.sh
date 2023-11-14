@@ -9,7 +9,9 @@ apt-get update
 apt-get upgrade -y
 apt-get install -y libelf-dev libssl-dev dwarves bc kmod cpio python3 zstd debhelper|| exit 1
 
-curl -L "$(cat url)" | tar --bzip2 -xf - || exit 1
+curl -L https://gitlab.com/xanmod/linux/-/archive/$(cat version)-xanmod1.tar.bz2 | tar --bzip2 -xf - || exit 1
+
+echo VER=$(cat version) >> $GITHUB_ENV
 
 cd linux-* || exit 1
 

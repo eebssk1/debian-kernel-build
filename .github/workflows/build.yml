@@ -27,3 +27,11 @@ jobs:
         with:
           name: debs
           path: "*.deb"
+      - name: release
+        uses: ncipollo/release-action@v1.13.0
+        with:
+          allowUpdates: true
+          artifacts: "*.deb"
+          commit: 6
+          makeLatest: true
+          tag: ${{ env.VER }}
