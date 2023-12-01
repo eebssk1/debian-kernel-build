@@ -19,6 +19,11 @@ for a in ../*.patch; do
 patch -f -p1 -i $a
 done
 
+for a in ../*.rev-patch; do
+patch -R -p1 -i $a
+done
+
+
 KCFLAGS="-O3 -mllvm --enable-knowledge-retention=true -mllvm --use-cfl-aa=steens -mllvm --use-cfl-aa-in-codegen=steens -mllvm --polly=true -mllvm --polly-vectorizer=stripmine -mllvm --polly-default-tile-size=32 -mllvm --polly-2nd-level-default-tile-size=8  -mllvm --polly-2nd-level-tiling=true -mllvm --polly-run-inliner=true -mllvm --polly-opt-max-constant-term=46 -mllvm --polly-opt-max-coefficient=46  -mllvm --polly-register-tiling=true -mllvm --polly-register-tiling-default-tile-size=4 -mllvm --polly-run-dce=true -mllvm --polly-detect-profitability-min-per-loop-insts=44 -mllvm --polly-invariant-load-hoisting=true -mllvm --slp-min-reg-size=64 -mllvm --enable-partial-inlining=true -mllvm --extra-vectorizer-passes=true -mllvm --enable-loop-flatten=true -mllvm --enable-gvn-hoist=true -mllvm --enable-matrix=true -mllvm --enable-constraint-elimination=true -mllvm --reroll-loops=true -mllvm --hot-cold-split=true"
 
 if [ "$1" = "desktop" ]; then
