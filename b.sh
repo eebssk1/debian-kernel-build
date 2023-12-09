@@ -15,11 +15,18 @@ echo VER=$(cat version) >> $GITHUB_ENV
 
 cd linux-* || exit 1
 
-for a in ../*.patch; do
+for a in ../patch/cp/*.patch; do
+echo Applying $a
 patch -f -p1 -i $a
 done
 
-for a in ../*.rev-patch; do
+for a in ../patch/cl/*.patch; do
+echo Applying $a
+patch -f -p1 -i $a
+done
+
+for a in ../patch/rev/*.patch; do
+echo Revesing $a
 patch -R -p1 -i $a
 done
 

@@ -1,11 +1,10 @@
 --- a/net/ipv4/tcp.c	2023-11-14 13:53:35.376065984 +0800
 +++ b/net/ipv4/tcp.c	2023-11-14 13:52:55.668750167 +0800
-@@ -460,6 +460,8 @@
+@@ -460,6 +460,7 @@
  	tcp_scaling_ratio_init(sk);
  
  	set_bit(SOCK_SUPPORT_ZC, &sk->sk_socket->flags);
 +	tp->nonagle = TCP_NAGLE_OFF;
-+	icsk->icsk_ack.pingpong = TCP_PINGPONG_THRESH;
  	sk_sockets_allocated_inc(sk);
  }
  EXPORT_SYMBOL(tcp_init_sock);
