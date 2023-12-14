@@ -16,8 +16,8 @@ index a1a35c12635e..762d8a819c4a 100644
  	cgroup_rstat_updated(memcg->css.cgroup, smp_processor_id());
  
  	x = __this_cpu_add_return(stats_updates, abs(val));
--	if (x > MEMCG_CHARGE_BATCH * 128) {
-+	if (unlikely(x > MEMCG_CHARGE_BATCH * 128)) {
+-	if (x > MEMCG_CHARGE_BATCH) {
++	if (unlikely(x > MEMCG_CHARGE_BATCH)) {
  		/*
  		 * If stats_flush_threshold exceeds the threshold
  		 * (>num_online_cpus()), cgroup stats update will be triggered
