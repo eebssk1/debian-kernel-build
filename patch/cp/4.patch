@@ -1,0 +1,11 @@
+--- a/Makefile	2023-12-17 19:38:53.412036564 +0800
++++ b/Makefile	2023-12-17 19:49:12.880021292 +0800
+@@ -951,7 +951,7 @@
+ ifdef CONFIG_LTO_CLANG
+ ifdef CONFIG_LTO_CLANG_THIN
+ CC_FLAGS_LTO	:= -flto=thin -fsplit-lto-unit
+-KBUILD_LDFLAGS	+= --thinlto-cache-dir=$(extmod_prefix).thinlto-cache
++KBUILD_LDFLAGS	+= --thinlto-cache-dir=$(extmod_prefix).thinlto-cache --lto-O3
+ else
+ CC_FLAGS_LTO	:= -flto
+ endif
