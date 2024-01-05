@@ -19,7 +19,7 @@ jobs:
         uses: hendrikmuhs/ccache-action@v1.2.8
         with:
           verbose: 1
-          max-size: "960M"
+          max-size: "1280M"
           key: ${{ matrix.target }}
       - name: build
         run: ./b.sh ${{ matrix.target }}
