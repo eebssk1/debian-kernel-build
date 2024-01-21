@@ -51,11 +51,9 @@ exit 1
 fi
 
 if [ "x$(which ccache)" != "x" ]; then
-ccache -o compression_level=3
+ccache -o compression_level=2
 ccache -o sloppiness=locale
-ccache -o compiler_check=content
-ccache -o inode_cache=false
-make bindeb-pkg -j2 LLVM=1 CC="ccache clang"
+make bindeb-pkg -j3 LLVM=1 CC="ccache clang"
 else
-make bindeb-pkg -j2 LLVM=1
+make bindeb-pkg -j3 LLVM=1
 fi
