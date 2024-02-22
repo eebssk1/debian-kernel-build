@@ -11,6 +11,11 @@ apt-get install -y libelf-dev libssl-dev dwarves bc kmod cpio python3 zstd debhe
 
 curl -L https://gitlab.com/xanmod/linux/-/archive/$(cat version)-xanmod1.tar.bz2 | tar --bzip2 -xf - || exit 1
 
+curl -L https://github.com/eebssk1/aio_tc_build/releases/download/20240218_llvm/llvm_17.0.6.tar.xz | tar --xz -xf -
+
+mv llvm_17.0.6 /opt/newcc
+chown -R root:root /opt/newcc
+
 echo VER=$(cat version) >> $GITHUB_ENV
 
 cd linux-* || exit 1
@@ -31,7 +36,11 @@ patch -R -p1 -i $a
 done
 
 
-if [ -e /opt/newclang/bin ];then
+if [ -e /opt/newcc/bin ]; then
+export PATH=/opt/newcc/bin:$PATH
+fi
+
+if [ -e /opt/newclang/bin ]; then
 export PATH=/opt/newclang/bin:$PATH
 fi
 
