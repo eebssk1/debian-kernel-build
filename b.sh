@@ -13,8 +13,9 @@ curl -L https://gitlab.com/xanmod/linux/-/archive/$(cat version)-xanmod1.tar.bz2
 
 curl -L https://github.com/eebssk1/aio_tc_build/releases/download/20240218_llvm/llvm_17.0.6.tar.xz | tar --xz -xf -
 
-mv llvm_17.0.6 /opt/newcc
-chown -R root:root /opt/newcc
+mv llvm_17.0.6 /opt/newclang
+chown -R root:root /opt/newclang
+rm llvm_17.0.6.tar.xz
 
 echo VER=$(cat version) >> $GITHUB_ENV
 
