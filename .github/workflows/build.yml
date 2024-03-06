@@ -8,13 +8,18 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
-    container: ghcr.io/eebssk1/bbk/debian-bookworm:latest
+    container:
+      image: ghcr.io/eebssk1/bbk/debian-bookworm:latest
+      volumes:
+        - /root:/user
     strategy:
       matrix:
         target: [desktop, server_large, server_small, server_small_2]
 
     steps:
       - uses: actions/checkout@v2
+      - name: setup swap
+        run: exec ./swap.sh
       - name: enable ccache
         uses: hendrikmuhs/ccache-action@v1.2.8
         with:
