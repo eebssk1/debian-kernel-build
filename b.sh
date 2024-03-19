@@ -46,19 +46,19 @@ export PATH=/opt/newclang/bin:$PATH
 fi
 
 
-KCFLAGS="-O3 -mllvm --enable-knowledge-retention=true -mllvm --polly=true -mllvm --polly-vectorizer=stripmine -mllvm --polly-default-tile-size=32 -mllvm --polly-2nd-level-default-tile-size=8  -mllvm --polly-2nd-level-tiling=true -mllvm --polly-run-inliner=true -mllvm --polly-opt-max-constant-term=46 -mllvm --polly-opt-max-coefficient=46  -mllvm --polly-register-tiling=true -mllvm --polly-register-tiling-default-tile-size=3 -mllvm --polly-run-dce=true -mllvm --polly-detect-profitability-min-per-loop-insts=46 -mllvm --polly-invariant-load-hoisting=true -mllvm --enable-partial-inlining=true -mllvm --extra-vectorizer-passes=true -mllvm --enable-loop-flatten=true -mllvm --enable-gvn-hoist=true -mllvm --enable-matrix=true -mllvm --enable-constraint-elimination=true -mllvm --hot-cold-split=true -mllvm --hotcoldsplit-threshold=3 -mllvm --hotcoldsplit-max-params=4 -mllvm --enable-module-inliner=true -mllvm --thinlto-synthesize-entry-counts=true"
+KCFLAGS="-O3 -mllvm --enable-knowledge-retention=true -mllvm --polly=true -mllvm --polly-vectorizer=stripmine -mllvm --polly-default-tile-size=36 -mllvm --polly-2nd-level-default-tile-size=10  -mllvm --polly-2nd-level-tiling=true -mllvm --polly-run-inliner=true -mllvm --polly-opt-max-constant-term=51 -mllvm --polly-opt-max-coefficient=51  -mllvm --polly-register-tiling=true -mllvm --polly-run-dce=true -mllvm --polly-detect-profitability-min-per-loop-insts=50 -mllvm --polly-invariant-load-hoisting=true -mllvm --enable-partial-inlining=true -mllvm --extra-vectorizer-passes=true -mllvm --enable-loop-flatten=true -mllvm --enable-gvn-hoist=true -mllvm --enable-matrix=true -mllvm --enable-constraint-elimination=true -mllvm --hot-cold-split=true -mllvm --enable-module-inliner=true -mllvm --thinlto-synthesize-entry-counts=true"
 
 if [ "$1" = "desktop" ]; then
-export KCFLAGS="$KCFLAGS -mtune=skylake"
+export KCFLAGS="$KCFLAGS -mtune=skylake -mllvm --cost-kind=latency"
 cp ../config_desk .config || exit 1
 elif [ "$1" = "server_large" ]; then
-export KCFLAGS="$KCFLAGS -mtune=broadwell"
+export KCFLAGS="$KCFLAGS -mtune=broadwell -mllvm --cost-kind=throughput"
 cp ../config_serl .config || exit 1
 elif [ "$1" = "server_small" ]; then
-export KCFLAGS="$KCFLAGS -mtune=skylake"
+export KCFLAGS="$KCFLAGS -mtune=skylake -mllvm --cost-kind=throughput"
 cp ../config_serm .config || exit 1
 elif [ "$1" = "server_small_2" ]; then
-export KCFLAGS="$KCFLAGS -mtune=sandybridge"
+export KCFLAGS="$KCFLAGS -mtune=sandybridge -mllvm --cost-kind=throughput"
 cp ../config_ser2 .config || exit 1
 else
 echo "No such target!"
