@@ -11,11 +11,10 @@ apt-get install -y libelf-dev libssl-dev dwarves bc kmod cpio python3 zstd debhe
 
 curl -L https://gitlab.com/xanmod/linux/-/archive/$(cat version)-xanmod1.tar.bz2 | tar --bzip2 -xf - || exit 1
 
-curl -L https://github.com/eebssk1/aio_tc_build/releases/download/20240218_llvm/llvm_17.0.6.tar.xz | tar --xz -xf -
+curl -L https://github.com/eebssk1/aio_tc_build/releases/download/20240425_llvm/llvm_18.1.4.tgz | tar -zxf -
 
-mv llvm_17.0.6 /opt/newclang
+mv llvm_18.1.4 /opt/newclang
 chown -R root:root /opt/newclang
-rm llvm_17.0.6.tar.xz
 
 echo VER=$(cat version) >> $GITHUB_ENV
 
@@ -49,7 +48,7 @@ export PATH=/opt/newclang/bin:$PATH
 fi
 
 
-KCFLAGS="-O3 -mllvm --enable-knowledge-retention=true -mllvm --polly=true -mllvm --polly-vectorizer=stripmine -mllvm --polly-default-tile-size=36 -mllvm --polly-2nd-level-default-tile-size=10  -mllvm --polly-2nd-level-tiling=true -mllvm --polly-run-inliner=true -mllvm --polly-opt-max-constant-term=51 -mllvm --polly-opt-max-coefficient=51  -mllvm --polly-register-tiling=true -mllvm --polly-run-dce=true -mllvm --polly-detect-profitability-min-per-loop-insts=50 -mllvm --polly-invariant-load-hoisting=true -mllvm --enable-partial-inlining=true -mllvm --extra-vectorizer-passes=true -mllvm --enable-loop-flatten=true -mllvm --enable-gvn-hoist=true -mllvm --enable-matrix=true -mllvm --enable-constraint-elimination=true -mllvm --hot-cold-split=true -mllvm --hotcoldsplit-threshold=3 -mllvm --hotcoldsplit-max-params=2 -mllvm --enable-module-inliner=true -mllvm --thinlto-synthesize-entry-counts=true"
+KCFLAGS="-O3 -mllvm --enable-knowledge-retention=true -mllvm --polly=true -mllvm --polly-vectorizer=stripmine -mllvm --polly-default-tile-size=36 -mllvm --polly-2nd-level-default-tile-size=10  -mllvm --polly-2nd-level-tiling=true -mllvm --polly-run-inliner=true -mllvm --polly-opt-max-constant-term=51 -mllvm --polly-opt-max-coefficient=51  -mllvm --polly-register-tiling=true -mllvm --polly-run-dce=true -mllvm --polly-detect-profitability-min-per-loop-insts=50 -mllvm --polly-invariant-load-hoisting=true -mllvm --enable-partial-inlining=true -mllvm --extra-vectorizer-passes=true -mllvm --enable-loop-flatten=true -mllvm --enable-gvn-hoist=true -mllvm --enable-matrix=true -mllvm --enable-constraint-elimination=true -mllvm --hot-cold-split=true -mllvm --hotcoldsplit-threshold=4 -mllvm --hotcoldsplit-max-params=2 -mllvm --hotcoldsplit-cold-probability-denom=85 -mllvm --enable-module-inliner=true -mllvm --thinlto-synthesize-entry-counts=true"
 
 if [ "$1" = "desktop" ]; then
 export KCFLAGS="$KCFLAGS -mtune=skylake"
