@@ -67,6 +67,8 @@ echo "No such target!"
 exit 1
 fi
 
+make olddefconfig LLVM=1
+
 if [ "x$(which ccache)" != "x" ]; then
 ccache -o compression_level=2
 ccache -o sloppiness=locale
