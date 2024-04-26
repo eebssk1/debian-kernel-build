@@ -70,7 +70,7 @@ fi
 make olddefconfig LLVM=1
 
 if [ "x$(which ccache)" != "x" ]; then
-ccache -o compression_level=2
+ccache -o compression_level=3
 ccache -o sloppiness=locale
 make bindeb-pkg -j3 LLVM=1 CC="ccache clang"
 else
