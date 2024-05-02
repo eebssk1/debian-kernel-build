@@ -17,7 +17,7 @@
 +		if (pgdat->kswapd) {
 +			struct sched_param sp = { .sched_priority = 0 };
 +			sched_setscheduler_nocheck(pgdat->kswapd, SCHED_BATCH, &sp);
-+			set_user_nice(pgdat->kswapd, -2);
++			set_user_nice(pgdat->kswapd, 1);
 +		}
  	}
  	pgdat_kswapd_unlock(pgdat);
@@ -58,16 +58,14 @@
  #include <asm/softirq_stack.h>
  
  #define CREATE_TRACE_POINTS
-@@ -956,11 +958,21 @@
+@@ -956,11 +958,19 @@
  #define takeover_tasklets	NULL
  #endif /* CONFIG_HOTPLUG_CPU */
  
 +
 +static void setsched(unsigned int cpu) {
 +	if(per_cpu(ksoftirqd, cpu)) {
-+		struct sched_param sp = { .sched_priority = 0 };
-+		sched_setscheduler_nocheck(per_cpu(ksoftirqd,cpu), SCHED_BATCH, &sp);
-+		set_user_nice(per_cpu(ksoftirqd, cpu), -4);
++		set_user_nice(per_cpu(ksoftirqd, cpu), -3);
 +	}
 +}
 +
