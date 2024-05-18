@@ -7,7 +7,7 @@ index b69979c9ced5..7eadbafc006b 100644
  
  	x = __this_cpu_add_return(stats_updates, abs(val));
 -	if (unlikely(x > MEMCG_CHARGE_BATCH)) {
-+	if (unlikely(x > MEMCG_CHARGE_BATCH * 128)) {
++	if (unlikely(x > MEMCG_CHARGE_BATCH * 64)) {
  		/*
  		 * If stats_flush_threshold exceeds the threshold
  		 * (>num_online_cpus()), cgroup stats update will be triggered
