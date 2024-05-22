@@ -1,0 +1,23 @@
+--- a/kernel/Kconfig.hz	2024-05-17 17:28:47.000000000 +0000
++++ b/kernel/Kconfig.hz	2024-05-22 07:09:48.895187219 +0000
+@@ -24,6 +24,12 @@
+ 	  with lots of processors that may show reduced performance if
+ 	  too many timer interrupts are occurring.
+ 
++	config HZ_200
++		bool "200 HZ"
++	help
++	 200 Hz is better for average servers to have optimal performance
++	 while keeping power consumption low.
++
+ 	config HZ_250
+ 		bool "250 HZ"
+ 	help
+@@ -58,6 +64,7 @@
+ config HZ
+ 	int
+ 	default 100 if HZ_100
++	default 200 if HZ_200
+ 	default 250 if HZ_250
+ 	default 300 if HZ_300
+ 	default 500 if HZ_500
