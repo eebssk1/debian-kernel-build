@@ -1,0 +1,11 @@
+--- a/lib/sbitmap.c	2024-05-17 17:28:47.000000000 +0000
++++ b/lib/sbitmap.c	2024-05-30 18:52:44.131103622 +0000
+@@ -534,7 +534,7 @@
+ int sbitmap_queue_get_shallow(struct sbitmap_queue *sbq,
+ 			      unsigned int shallow_depth)
+ {
+-	WARN_ON_ONCE(shallow_depth < sbq->min_shallow_depth);
++	WARN_ONCE(shallow_depth < sbq->min_shallow_depth, "Shallow depth error! Current: %d Min: %d\n", shallow_depth, sbq->min_shallow_depth);
+ 
+ 	return sbitmap_get_shallow(&sbq->sb, shallow_depth);
+ }
