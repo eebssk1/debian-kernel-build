@@ -1,0 +1,11 @@
+--- a/block/blk-mq-tag.c	2024-05-17 17:28:47.000000000 +0000
++++ b/block/blk-mq-tag.c	2024-05-30 14:21:43.458802809 +0000
+@@ -109,7 +109,7 @@
+ 			!hctx_may_queue(data->hctx, bt))
+ 		return BLK_MQ_NO_TAG;
+ 
+-	if (data->shallow_depth)
++	if (data->shallow_depth && bt-> min_shallow_depth)
+ 		return sbitmap_queue_get_shallow(bt, data->shallow_depth);
+ 	else
+ 		return __sbitmap_queue_get(bt);
