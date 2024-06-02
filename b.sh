@@ -13,7 +13,7 @@ curl -L https://gitlab.com/xanmod/linux/-/archive/$(cat version)-xanmod1.tar.bz2
 
 
 if [ x$2 = xgcc ]; then
-curl -L https://github.com/eebssk1/aio_tc_build/releases/download/9f22144c/x86_64-linux-gnu-native.tb2 | tar --bz -xf -
+curl -L https://github.com/eebssk1/aio_tc_build/releases/download/d41b0fe5/x86_64-linux-gnu-native.tb2 | tar --bz -xf -
 mv x86_64-linux-gnu /opt/newcc
 chown -R root:root /opt/newcc
 else
