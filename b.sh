@@ -69,7 +69,7 @@ elif [ "$1" = "server_small" ]; then
 export KCFLAGS="$KCFLAGS -mtune=skylake"
 cp ../config_serm .config || exit 1
 elif [ "$1" = "server_small_2" ]; then
-export KCFLAGS="$KCFLAGS -mtune=sandybridge"
+export KCFLAGS="$KCFLAGS -mtune=westmere"
 cp ../config_ser2 .config || exit 1
 else
 echo "No such target!"
