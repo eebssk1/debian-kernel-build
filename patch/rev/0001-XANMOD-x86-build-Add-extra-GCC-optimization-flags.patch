@@ -1,0 +1,26 @@
+From 9f399a0428168b192c45405b644e8d1ce19c37d8 Mon Sep 17 00:00:00 2001
+From: Alexandre Frade <kernel@xanmod.org>
+Date: Wed, 12 Jun 2024 12:24:20 +0000
+Subject: [PATCH] XANMOD: x86/build: Add extra GCC optimization flags
+
+Signed-off-by: Alexandre Frade <kernel@xanmod.org>
+---
+ arch/x86/Makefile | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/arch/x86/Makefile b/arch/x86/Makefile
+index c20a85ade..8c6749602 100644
+--- a/arch/x86/Makefile
++++ b/arch/x86/Makefile
+@@ -62,7 +62,7 @@ export BITS
+ 
+ # More compiler optimizations
+ ifdef CONFIG_CC_OPTIMIZE_FOR_PERFORMANCE
+-KBUILD_CFLAGS += -O3
++KBUILD_CFLAGS += -O3 $(call cc-option,-fmodulo-sched -fmodulo-sched-allow-regmoves -fivopts)
+ KBUILD_RUSTFLAGS += -Copt-level=3
+ endif
+ 
+-- 
+2.43.0
+
