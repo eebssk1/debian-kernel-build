@@ -53,7 +53,7 @@ export PATH=/opt/newclang/bin:$PATH
 fi
 
 if [ x$2 = xgcc ]; then
-KCFLAGS="-fgraphite -fgraphite-identity -fipa-pta -fmodulo-sched -freschedule-modulo-scheduled-loops -flive-range-shrinkage -floop-nest-optimize -fsched-pressure -fsched-spec-load -fsched-stalled-insns=3 -fsched-stalled-insns-dep=7 -fschedule-insns -ftree-lrs -malign-data=cacheline -mrelax-cmpxchg-loop @$PWD/../gp.txt"
+KCFLAGS="-fgraphite -fgraphite-identity -fipa-pta -fmodulo-sched -freschedule-modulo-scheduled-loops -flive-range-shrinkage -floop-nest-optimize -fsched-pressure -fsched-spec-load -fsched-stalled-insns=4 -fsched-stalled-insns-dep=6 -fschedule-insns -ftree-lrs -fweb -fira-region=mixed -fgcse-las -malign-data=cacheline -mrelax-cmpxchg-loop @$PWD/../gp.txt"
 else
 KCFLAGS="-mllvm --enable-knowledge-retention=true -mllvm --polly=true -mllvm --polly-vectorizer=stripmine -mllvm --polly-default-tile-size=32 -mllvm --polly-2nd-level-default-tile-size=8  -mllvm --polly-2nd-level-tiling=true -mllvm --polly-run-inliner=true -mllvm --polly-opt-max-constant-term=48 -mllvm --polly-opt-max-coefficient=48  -mllvm --polly-register-tiling=true -mllvm --polly-run-dce=true -mllvm --polly-detect-profitability-min-per-loop-insts=52 -mllvm --polly-invariant-load-hoisting=true -mllvm --extra-vectorizer-passes=true -mllvm --enable-loop-flatten=true -mllvm --enable-gvn-hoist=true -mllvm --enable-matrix=true -mllvm --enable-constraint-elimination=true -mllvm --enable-module-inliner=true -mllvm --thinlto-synthesize-entry-counts=true"
 fi
