@@ -1,11 +1,11 @@
---- a/Makefile	2023-12-17 19:38:53.412036564 +0800
-+++ b/Makefile	2023-12-17 19:49:12.880021292 +0800
-@@ -951,7 +951,7 @@
- ifdef CONFIG_LTO_CLANG
- ifdef CONFIG_LTO_CLANG_THIN
- CC_FLAGS_LTO	:= -flto=thin -fsplit-lto-unit
--KBUILD_LDFLAGS	+= --thinlto-cache-dir=$(extmod_prefix).thinlto-cache
-+KBUILD_LDFLAGS	+= --thinlto-cache-dir=$(extmod_prefix).thinlto-cache --lto-O3
- else
- CC_FLAGS_LTO	:= -flto
- endif
+--- a/Makefile	2024-06-21 21:16:57.366643142 +0000
++++ b/Makefile	2024-06-21 21:17:28.830703245 +0000
+@@ -1109,7 +1109,7 @@
+ CC_FLAGS_LTO	+= -fvisibility=hidden
+ 
+ # Limit inlining across translation units to reduce binary size
+-KBUILD_LDFLAGS += -mllvm -import-instr-limit=5
++KBUILD_LDFLAGS += -mllvm -import-instr-limit=5 --lto-O3
+ 
+ # Check for frame size exceeding threshold during prolog/epilog insertion
+ # when using lld < 13.0.0.
