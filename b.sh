@@ -89,4 +89,4 @@ export CC="ccache $CC"
 fi
 
 make olddefconfig
-make bindeb-pkg -j3
+make bindeb-pkg -j3 V=1
