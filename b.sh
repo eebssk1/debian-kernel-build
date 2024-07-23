@@ -52,6 +52,8 @@ if [ -e /opt/newclang/bin ]; then
 export PATH=/opt/newclang/bin:$PATH
 fi
 
+hash -r
+
 if [ x$2 = xgcc ]; then
 KCFLAGS="-fgraphite -fgraphite-identity -fipa-pta -fmodulo-sched -fmodulo-sched-allow-regmoves -freschedule-modulo-scheduled-loops -flive-range-shrinkage -floop-nest-optimize -fsched-pressure -fsched-spec-load -fsched-stalled-insns=4 -fsched-stalled-insns-dep=6 -fschedule-insns -ftree-lrs -fweb -fira-region=mixed -fgcse-las -malign-data=cacheline -mrelax-cmpxchg-loop @$PWD/../gp.txt"
 else
@@ -83,10 +85,11 @@ export LLVM=1
 fi
 
 if [ "x$(which ccache)" != "x" ]; then
+echo "Found ccache !"
 ccache -o compression_level=3
 ccache -o sloppiness=locale
 export CC="ccache $CC"
 fi
 
-make olddefconfig
-make bindeb-pkg -j3 V=1
+make olddefconfig CC="$CC"
+make bindeb-pkg -j3 V=1 CC="$CC"
