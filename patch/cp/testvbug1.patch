@@ -5,7 +5,7 @@
  			      unsigned int shallow_depth)
  {
 -	WARN_ON_ONCE(shallow_depth < sbq->min_shallow_depth);
-+	WARN_ONCE(shallow_depth < sbq->min_shallow_depth, "Shallow depth error! Current: %d Min: %d\n", shallow_depth, sbq->min_shallow_depth);
++	WARN_ONCE(shallow_depth < sbq->min_shallow_depth, "Shallow depth error: Current: %d Min: %d !\n", shallow_depth, sbq->min_shallow_depth);
  
  	return sbitmap_get_shallow(&sbq->sb, shallow_depth);
  }

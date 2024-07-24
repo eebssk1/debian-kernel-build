@@ -9,8 +9,8 @@
  #if HZ >= 100
 -#define TCP_DELACK_MIN	((unsigned)(HZ/25))	/* minimal time to delay before sending an ACK */
 -#define TCP_ATO_MIN	((unsigned)(HZ/25))
-+#define TCP_DELACK_MIN	((unsigned)(HZ/50))	/* minimal time to delay before sending an ACK */
-+#define TCP_ATO_MIN	((unsigned)(HZ/50))
++#define TCP_DELACK_MIN	((unsigned)(HZ/40))	/* minimal time to delay before sending an ACK */
++#define TCP_ATO_MIN	((unsigned)(HZ/40))
  #else
  #define TCP_DELACK_MIN	4U
  #define TCP_ATO_MIN	4U
