@@ -9,8 +9,11 @@ apt-get update
 apt-get upgrade -y
 apt-get install -y libelf-dev libssl-dev dwarves bc kmod cpio python3 zstd debhelper|| exit 1
 
-curl -L https://gitlab.com/xanmod/linux/-/archive/$(cat version)-xanmod1.tar.bz2 | tar --bzip2 -xf - || exit 1
+FILE=$(cat version)-xanmod1.tar.bz2
 
+wget https://gitlab.com/xanmod/linux/-/archive/$FILE
+tar --bzip2 -xf $FILE || exit 1
+rm $FILE
 
 if [ x$2 = xgcc ]; then
 curl -L https://github.com/eebssk1/aio_tc_build/releases/latest/download/x86_64-linux-gnu-native.tb2 | tar --bz -xf -
