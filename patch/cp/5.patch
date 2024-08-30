@@ -65,7 +65,7 @@
 +
 +static void setsched(unsigned int cpu) {
 +	if(per_cpu(ksoftirqd, cpu)) {
-+		set_user_nice(per_cpu(ksoftirqd, cpu), -3);
++		set_user_nice(per_cpu(ksoftirqd, cpu), -2);
 +	}
 +}
 +
@@ -84,9 +84,9 @@
 @@ -4759,6 +4759,8 @@
  	if (kthread_prio) {
  		sp.sched_priority = kthread_prio;
- 		sched_setscheduler_nocheck(t, SCHED_RR, &sp);
+ 		sched_setscheduler_nocheck(t, SCHED_FIFO, &sp);
 +	} else {
-+		set_user_nice(t, -2);
++		set_user_nice(t, -1);
  	}
  	rnp = rcu_get_root();
  	raw_spin_lock_irqsave_rcu_node(rnp, flags);
@@ -96,7 +96,7 @@
 @@ -1513,6 +1513,8 @@
  		WRITE_ONCE(rdp_gp->nocb_gp_kthread, t);
  		if (kthread_prio)
- 			sched_setscheduler_nocheck(t, SCHED_RR, &sp);
+ 			sched_setscheduler_nocheck(t, SCHED_FIFO, &sp);
 +		if (!kthread_prio)
 +			set_user_nice(t, -1);
  	}
@@ -105,7 +105,7 @@
 @@ -1524,6 +1526,8 @@
  
  	if (IS_ENABLED(CONFIG_RCU_NOCB_CPU_CB_BOOST) && kthread_prio)
- 		sched_setscheduler_nocheck(t, SCHED_RR, &sp);
+ 		sched_setscheduler_nocheck(t, SCHED_FIFO, &sp);
 +	if (!kthread_prio)
 +		set_user_nice(t, -1);
  
