@@ -32,12 +32,12 @@ jobs:
       - name: build
         run: ./b.sh ${{ matrix.target }} ${{ matrix.compiler }}
       - name: upload
-        uses: actions/upload-artifact@v2.2.4
+        uses: actions/upload-artifact@v4
         with:
           name: debs
           path: "*.deb"
       - name: release
-        uses: ncipollo/release-action@v1.13.0
+        uses: ncipollo/release-action@v1.14.0
         with:
           allowUpdates: true
           artifacts: "*.deb"
