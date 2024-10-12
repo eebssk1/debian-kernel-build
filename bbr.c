@@ -130,13 +130,13 @@ struct bbr {
 #define CYCLE_LEN	8	/* number of phases in a pacing gain cycle */
 
 /* Window length of bw filter (in rounds): */
-static const int bbr_bw_rtts = CYCLE_LEN + 2;
+static const int bbr_bw_rtts = CYCLE_LEN + 3;
 /* Window length of min_rtt filter (in sec): */
-static const u32 bbr_min_rtt_win_sec = 24;
+static const u32 bbr_min_rtt_win_sec = 21;
 /* Minimum time (in ms) spent at bbr_cwnd_min_target in BBR_PROBE_RTT mode: */
-static const u32 bbr_probe_rtt_mode_ms = 150;
+static const u32 bbr_probe_rtt_mode_ms = 110;
 /* Skip TSO below the following bandwidth (bits/sec): */
-static const int bbr_min_tso_rate = 1200000;
+static const int bbr_min_tso_rate = 1040000;
 
 /* Pace at ~1% below estimated bw, on average, to reduce queue at bottleneck.
  * In order to help drive the network toward lower queues and low latency while
@@ -151,19 +151,19 @@ static const int bbr_pacing_margin_percent = 1;
  * and send the same number of packets per RTT that an un-paced, slow-starting
  * Reno or CUBIC flow would:
  */
-static const int bbr_high_gain  = BBR_UNIT * 2898 / 1000 + 1;
+static const int bbr_high_gain  = BBR_UNIT * 2919 / 1000 + 1;
 /* The pacing gain of 1/high_gain in BBR_DRAIN is calculated to typically drain
  * the queue created in BBR_STARTUP in a single round:
  */
-static const int bbr_drain_gain = BBR_UNIT * 1000 / 2852;
+static const int bbr_drain_gain = BBR_UNIT * 1000 / 2832;
 /* The gain for deriving steady-state cwnd tolerates delayed/stretched ACKs: */
-static const int bbr_cwnd_gain  = BBR_UNIT * 2 + BBR_UNIT * 4 / 5;
+static const int bbr_cwnd_gain  = BBR_UNIT * 2 + BBR_UNIT * 45 / 50;
 /* The pacing_gain values for the PROBE_BW gain cycle, to discover/share bw: */
 static const int bbr_pacing_gain[] = {
-	BBR_UNIT * 39 / 20,	/* probe for more available bw */
-	BBR_UNIT * 17 / 20,	/* drain queue and/or yield bw to other flows */
-	BBR_UNIT, BBR_UNIT, BBR_UNIT,	/* cruise at 1.0*bw to utilize pipe, */
-	BBR_UNIT, BBR_UNIT, BBR_UNIT	/* without creating excess queue... */
+	BBR_UNIT * 99 / 50,	/* probe for more available bw */
+	BBR_UNIT * 40 / 50,	/* drain queue and/or yield bw to other flows */
+	BBR_UNIT * 27 / 25, BBR_UNIT * 28 / 25, BBR_UNIT * 29 / 25,	/* cruise at 1.0*bw to utilize pipe, */
+	BBR_UNIT * 58 / 50, BBR_UNIT * 59 / 50, BBR_UNIT * 60 / 50	/* without creating excess queue... */
 };
 /* Randomize the starting gain cycling phase over N phases: */
 static const u32 bbr_cycle_rand = 7;
@@ -172,34 +172,34 @@ static const u32 bbr_cycle_rand = 7;
  * smooth functioning, a sliding window protocol ACKing every other packet
  * needs at least 4 packets in flight:
  */
-static const u32 bbr_cwnd_min_target = 5;
+static const u32 bbr_cwnd_min_target = 4;
 
 /* To estimate if BBR_STARTUP mode (i.e. high_gain) has filled pipe... */
 /* If bw has increased significantly (1.25x), there may be more bw available: */
-static const u32 bbr_full_bw_thresh = BBR_UNIT * 23 / 20;
+static const u32 bbr_full_bw_thresh = BBR_UNIT * 57 / 50;
 /* But after 3 rounds w/o significant bw growth, estimate pipe is full: */
-static const u32 bbr_full_bw_cnt = 6;
+static const u32 bbr_full_bw_cnt = 7;
 
 /* "long-term" ("LT") bandwidth estimator parameters... */
 /* The minimum number of rounds in an LT bw sampling interval: */
-static const u32 bbr_lt_intvl_min_rtts = 6;
+static const u32 bbr_lt_intvl_min_rtts = 5;
 /* If lost/delivered ratio > 20%, interval is "lossy" and we may be policed: */
 static const u32 bbr_lt_loss_thresh = 66;
 /* If 2 intervals have a bw ratio <= 1/8, their bw is "consistent": */
-static const u32 bbr_lt_bw_ratio = BBR_UNIT / 8;
+static const u32 bbr_lt_bw_ratio = BBR_UNIT / 9;
 /* If 2 intervals have a bw diff <= 4 Kbit/sec their bw is "consistent": */
-static const u32 bbr_lt_bw_diff = 6000 / 8;
+static const u32 bbr_lt_bw_diff = 3000 / 8;
 /* If we estimate we're policed, use lt_bw for this many round trips: */
-static const u32 bbr_lt_bw_max_rtts = 55;
+static const u32 bbr_lt_bw_max_rtts = 35;
 
 /* Gain factor for adding extra_acked to target cwnd: */
-static const int bbr_extra_acked_gain = BBR_UNIT + BBR_UNIT / 8;
+static const int bbr_extra_acked_gain = BBR_UNIT + BBR_UNIT / 7;
 /* Window length of extra_acked window. */
 static const u32 bbr_extra_acked_win_rtts = 5;
 /* Max allowed val for ack_epoch_acked, after which sampling epoch is reset */
 static const u32 bbr_ack_epoch_acked_reset_thresh = 1U << 20;
 /* Time period for clamping cwnd increment due to ack aggregation */
-static const u32 bbr_extra_acked_max_us = 94 * 1000;
+static const u32 bbr_extra_acked_max_us = 103 * 1000;
 
 static void bbr_check_probe_rtt_done(struct sock *sk);
 
@@ -244,9 +244,14 @@ static u16 bbr_extra_acked(const struct sock *sk)
 static u64 bbr_rate_bytes_per_sec(struct sock *sk, u64 rate, int gain)
 {
 	unsigned int mss = tcp_sk(sk)->mss_cache;
+        u32 min_rtt = min(tcp_sk(sk)->srtt_us, ((struct bbr *)inet_csk_ca(sk))->min_rtt_us);
 
 	rate *= mss;
-	rate *= gain;
+	if(unlikely(min_rtt <= 80 && gain != BBR_UNIT)) {
+                int mut = BBR_UNIT * 21 / 20;
+		gain = min(gain, mut);
+	}
+		rate *= gain;
 	rate >>= BBR_SCALE;
 	rate *= USEC_PER_SEC / 100 * (100 - bbr_pacing_margin_percent);
 	return rate >> BW_SCALE;
@@ -535,7 +540,8 @@ static void bbr_set_cwnd(struct sock *sk, const struct rate_sample *rs,
 {
 	struct tcp_sock *tp = tcp_sk(sk);
 	struct bbr *bbr = inet_csk_ca(sk);
-	u32 cwnd = tcp_snd_cwnd(tp), target_cwnd = 0;
+	u32 cwnd = tcp_snd_cwnd(tp), target_cwnd = 0, min_rtt_us = 0;
+	min_rtt_us = min(tp->srtt_us, bbr->min_rtt_us);
 
 	if (!acked)
 		goto done;  /* no packet fully ACKed; just apply caps */
@@ -557,6 +563,10 @@ static void bbr_set_cwnd(struct sock *sk, const struct rate_sample *rs,
 	else if (cwnd < target_cwnd || tp->delivered < TCP_INIT_CWND)
 		cwnd = cwnd + acked;
 	cwnd = max(cwnd, bbr_cwnd_min_target);
+
+	if (unlikely(min_rtt_us <= 80 && cwnd >= 12)) {
+		cwnd = max(34, cwnd);
+	}
 
 done:
 	tcp_snd_cwnd_set(tp, min(cwnd, tp->snd_cwnd_clamp));	/* apply global cap */
