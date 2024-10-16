@@ -68,7 +68,7 @@ fi
 hash -r
 
 if [ x$2 = xgcc ]; then
-KCFLAGS="-fgraphite -fgraphite-identity -fipa-pta -fmodulo-sched -fmodulo-sched-allow-regmoves -freschedule-modulo-scheduled-loops -flive-range-shrinkage -floop-nest-optimize -fsched-pressure -fsched-spec-load -fsched-stalled-insns=4 -fsched-stalled-insns-dep=6 -fschedule-insns -ftree-lrs -fira-region=mixed -fgcse-sm -fgcse-las -malign-data=cacheline -mrelax-cmpxchg-loop @$PWD/../gp.txt"
+KCFLAGS="-fipa-pta -D__1ENABLE_AGGRESSIVE_GRAPHITE9__ @$PWD/../gp.txt"
 else
 KCFLAGS="-mllvm --enable-knowledge-retention=true -mllvm --polly=true -mllvm --polly-vectorizer=stripmine -mllvm --polly-default-tile-size=32 -mllvm --polly-2nd-level-default-tile-size=8  -mllvm --polly-2nd-level-tiling=true -mllvm --polly-run-inliner=true -mllvm --polly-opt-max-constant-term=48 -mllvm --polly-opt-max-coefficient=48  -mllvm --polly-register-tiling=true -mllvm --polly-run-dce=true -mllvm --polly-detect-profitability-min-per-loop-insts=52 -mllvm --polly-invariant-load-hoisting=true -mllvm --extra-vectorizer-passes=true -mllvm --enable-loop-flatten=true -mllvm --enable-gvn-hoist=true -mllvm --enable-matrix=true -mllvm --enable-constraint-elimination=true -mllvm --enable-module-inliner=true -mllvm --thinlto-synthesize-entry-counts=true"
 fi
