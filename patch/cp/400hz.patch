@@ -1,0 +1,23 @@
+--- a/kernel/Kconfig.hz	2024-10-17 17:00:15.000000000 +0000
++++ b/kernel/Kconfig.hz	2024-10-28 13:48:05.209261685 +0000
+@@ -40,6 +40,12 @@
+ 	 on SMP and NUMA systems and exactly dividing by both PAL and
+ 	 NTSC frame rates for video and multimedia work.
+ 
++	config HZ_400
++		bool "400 HZ"
++	 help
++	  400 Hz is a balanced timer frequency for moderate servers with latency
++	  sensitive workloads.
++
+ 	config HZ_500
+ 		bool "500 HZ"
+ 	help
+@@ -60,6 +66,7 @@
+ 	default 100 if HZ_100
+ 	default 250 if HZ_250
+ 	default 300 if HZ_300
++	default 400 if HZ_400
+ 	default 500 if HZ_500
+ 	default 1000 if HZ_1000
+ 
