@@ -2,7 +2,7 @@ name: CI
 
 on:
   push:
-    branches: [ "6" ]
+    branches: [ "6_b3" ]
   workflow_dispatch:
 
 jobs:
@@ -41,6 +41,6 @@ jobs:
         with:
           allowUpdates: true
           artifacts: "*.deb"
-          commit: 6
-          makeLatest: ${{ matrix.compiler == 'llvm' }}
-          tag: ${{ env.VER }}-${{ matrix.compiler }}
+          commit: 6_b3
+          makeLatest: false
+          tag: ${{ env.VER }}-${{ matrix.compiler }}-b3

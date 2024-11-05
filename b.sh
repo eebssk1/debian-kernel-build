@@ -47,16 +47,6 @@ echo Applying $a
 patch -f -p1 -i $a || exit 128
 done
 
-for a in ../patch/bbr/*.patch; do
-[ -f "$a" ] || continue
-echo Revesing $a
-patch -R -p1 -i $a || exit 128
-done
-
-if [ -e ../bbr.c ]; then
-mv ../bbr.c net/ipv4/tcp_bbr.c
-fi
-
 if [ -e /opt/newcc/bin ]; then
 export PATH=/opt/newcc/bin:$PATH
 fi
