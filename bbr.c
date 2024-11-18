@@ -136,9 +136,9 @@ struct bbr {
 /* Window length of bw filter (in rounds): */
 static const int bbr_bw_rtts = CYCLE_LEN + 3;
 /* Window length of min_rtt filter (in sec): */
-static const u32 bbr_min_rtt_win_sec = 15;
+static const u32 bbr_min_rtt_win_sec = 16;
 /* Minimum time (in ms) spent at bbr_cwnd_min_target in BBR_PROBE_RTT mode: */
-static const u32 bbr_probe_rtt_mode_ms = 135;
+static const u32 bbr_probe_rtt_mode_ms = 125;
 /* Skip TSO below the following bandwidth (bits/sec): */
 static const int bbr_min_tso_rate = 1040000;
 
@@ -198,16 +198,16 @@ static const u32 bbr_lt_bw_ratio = BBR_UNIT / 10;
 /* If 2 intervals have a bw diff <= 4 Kbit/sec their bw is "consistent": */
 static const u32 bbr_lt_bw_diff = 2500 / 8;
 /* If we estimate we're policed, use lt_bw for this many round trips: */
-static const u32 bbr_lt_bw_max_rtts = 39;
+static const u32 bbr_lt_bw_max_rtts = 36;
 
 /* Gain factor for adding extra_acked to target cwnd: */
-static const int bbr_extra_acked_gain = BBR_UNIT + BBR_UNIT / 8;
+static const int bbr_extra_acked_gain = BBR_UNIT + BBR_UNIT / 10;
 /* Window length of extra_acked window. */
 static const u32 bbr_extra_acked_win_rtts = 5;
 /* Max allowed val for ack_epoch_acked, after which sampling epoch is reset */
 static const u32 bbr_ack_epoch_acked_reset_thresh = 1U << 20;
 /* Time period for clamping cwnd increment due to ack aggregation */
-static const u32 bbr_extra_acked_max_us = 135 * 1000;
+static const u32 bbr_extra_acked_max_us = 132 * 1000;
 
 static void bbr_check_probe_rtt_done(struct sock* sk);
 
@@ -488,6 +488,11 @@ static u32 bbr_ack_aggregation_cwnd(struct sock* sk) {
        return aggr_cwnd;
 }
 
+static u32 bbr_probe_rtt_cwnd(struct sock *sk) {
+	return max(bbr_cwnd_min_target,
+		     bbr_bdp(sk, bbr_bw(sk), BBR_UNIT * 3 / 4));
+}
+
 /* An optimization in BBR to reduce losses: On the first round of recovery, we
  * follow the packet conservation principle: send P packets per P packets acked.
  * After that, we slow-start and send at most 2*P packets per P packets acked.
@@ -568,9 +573,8 @@ done:
        tcp_snd_cwnd_set(tp,
                         min(cwnd, tp->snd_cwnd_clamp)); /* apply global cap */
        if (bbr->mode == BBR_PROBE_RTT) {
-              target_cwnd = min(target_cwnd, tp->snd_cwnd_clamp);
               /* drain queue, refresh min_rtt */
-              tcp_snd_cwnd_set(tp, max(target_cwnd / 4, bbr_cwnd_min_target));
+              tcp_snd_cwnd_set(tp, min(tcp_snd_cwnd(tp), bbr_probe_rtt_cwnd(sk)));
        }
 }
 
@@ -973,7 +977,7 @@ static void bbr_update_min_rtt(struct sock* sk, const struct rate_sample* rs) {
                   (tp->delivered + tcp_packets_in_flight(tp)) ?: 1;
               /* Maintain min packets in flight for max(200 ms, 1 round). */
               if (!bbr->probe_rtt_done_stamp &&
-                  tcp_packets_in_flight(tp) <= bbr_cwnd_min_target + 1) {
+                  tcp_packets_in_flight(tp) <= bbr_probe_rtt_cwnd(sk)) {
                      bbr->probe_rtt_done_stamp =
                          tcp_jiffies32 +
                          msecs_to_jiffies(bbr_probe_rtt_mode_ms);
