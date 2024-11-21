@@ -16,7 +16,7 @@ index 0abd772c57f0..9129a2179f25 100644
  MODULE_PARM_DESC(max_retries, "max number of retries a command may have");
  
 -static unsigned long default_ps_max_latency_us = 100000;
-+static unsigned long default_ps_max_latency_us = 200;
++static unsigned long default_ps_max_latency_us = 25000;
  module_param(default_ps_max_latency_us, ulong, 0644);
  MODULE_PARM_DESC(default_ps_max_latency_us,
  		 "max power saving latency for new devices; use PM QOS to change per device");

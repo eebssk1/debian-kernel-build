@@ -22,7 +22,7 @@ index 0b66e25c0e2d..406b41b387d5 100644
  		.flags = MWAIT2flg(0x01) | CPUIDLE_FLAG_ALWAYS_ENABLE,
  		.exit_latency = 10,
 -		.target_residency = 20,
-+		.target_residency = 120,
++		.target_residency = 100,
  		.enter = &intel_idle,
  		.enter_s2idle = intel_idle_s2idle, },
  	{
@@ -31,7 +31,7 @@ index 0b66e25c0e2d..406b41b387d5 100644
  		.flags = MWAIT2flg(0x10) | CPUIDLE_FLAG_TLB_FLUSHED,
  		.exit_latency = 33,
 -		.target_residency = 100,
-+		.target_residency = 900,
++		.target_residency = 800,
  		.enter = &intel_idle,
  		.enter_s2idle = intel_idle_s2idle, },
  	{
@@ -40,7 +40,7 @@ index 0b66e25c0e2d..406b41b387d5 100644
  		.flags = MWAIT2flg(0x20) | CPUIDLE_FLAG_TLB_FLUSHED,
  		.exit_latency = 133,
 -		.target_residency = 400,
-+		.target_residency = 1000,
++		.target_residency = 900,
  		.enter = &intel_idle,
  		.enter_s2idle = intel_idle_s2idle, },
  	{
@@ -49,7 +49,7 @@ index 0b66e25c0e2d..406b41b387d5 100644
  		.flags = MWAIT2flg(0x32) | CPUIDLE_FLAG_TLB_FLUSHED,
  		.exit_latency = 166,
 -		.target_residency = 500,
-+		.target_residency = 1500,
++		.target_residency = 1400,
  		.enter = &intel_idle,
  		.enter_s2idle = intel_idle_s2idle, },
  	{
@@ -58,7 +58,7 @@ index 0b66e25c0e2d..406b41b387d5 100644
  		.flags = MWAIT2flg(0x40) | CPUIDLE_FLAG_TLB_FLUSHED,
  		.exit_latency = 300,
 -		.target_residency = 900,
-+		.target_residency = 2000,
++		.target_residency = 1800,
  		.enter = &intel_idle,
  		.enter_s2idle = intel_idle_s2idle, },
  	{
@@ -67,7 +67,7 @@ index 0b66e25c0e2d..406b41b387d5 100644
  		.flags = MWAIT2flg(0x50) | CPUIDLE_FLAG_TLB_FLUSHED,
  		.exit_latency = 600,
 -		.target_residency = 1800,
-+		.target_residency = 5000,
++		.target_residency = 3500,
  		.enter = &intel_idle,
  		.enter_s2idle = intel_idle_s2idle, },
  	{
@@ -76,7 +76,7 @@ index 0b66e25c0e2d..406b41b387d5 100644
  		.flags = MWAIT2flg(0x60) | CPUIDLE_FLAG_TLB_FLUSHED,
  		.exit_latency = 2600,
 -		.target_residency = 7700,
-+		.target_residency = 9000,
++		.target_residency = 8000,
  		.enter = &intel_idle,
  		.enter_s2idle = intel_idle_s2idle, },
  	{
@@ -85,7 +85,7 @@ index 0b66e25c0e2d..406b41b387d5 100644
  		.flags = MWAIT2flg(0x01) | CPUIDLE_FLAG_ALWAYS_ENABLE,
  		.exit_latency = 10,
 -		.target_residency = 20,
-+		.target_residency = 90,
++		.target_residency = 100,
  		.enter = &intel_idle,
  		.enter_s2idle = intel_idle_s2idle, },
  	{
@@ -94,7 +94,7 @@ index 0b66e25c0e2d..406b41b387d5 100644
  		.flags = MWAIT2flg(0x10) | CPUIDLE_FLAG_TLB_FLUSHED,
  		.exit_latency = 40,
 -		.target_residency = 100,
-+		.target_residency = 900,
++		.target_residency = 800,
  		.enter = &intel_idle,
  		.enter_s2idle = intel_idle_s2idle, },
  	{
@@ -103,7 +103,7 @@ index 0b66e25c0e2d..406b41b387d5 100644
  		.flags = MWAIT2flg(0x20) | CPUIDLE_FLAG_TLB_FLUSHED,
  		.exit_latency = 133,
 -		.target_residency = 400,
-+		.target_residency = 1200,
++		.target_residency = 1300,
  		.enter = &intel_idle,
  		.enter_s2idle = intel_idle_s2idle, },
  	{
@@ -112,7 +112,7 @@ index 0b66e25c0e2d..406b41b387d5 100644
  		.flags = MWAIT2flg(0x32) | CPUIDLE_FLAG_TLB_FLUSHED,
  		.exit_latency = 166,
 -		.target_residency = 500,
-+		.target_residency = 1900,
++		.target_residency = 1800,
  		.enter = &intel_idle,
  		.enter_s2idle = intel_idle_s2idle, },
  	{
@@ -148,7 +148,7 @@ index 0b66e25c0e2d..406b41b387d5 100644
  		.flags = MWAIT2flg(0x01) | CPUIDLE_FLAG_ALWAYS_ENABLE,
  		.exit_latency = 10,
 -		.target_residency = 20,
-+		.target_residency = 120,
++		.target_residency = 100,
  		.enter = &intel_idle,
  		.enter_s2idle = intel_idle_s2idle, },
  	{
@@ -157,7 +157,7 @@ index 0b66e25c0e2d..406b41b387d5 100644
  		.flags = MWAIT2flg(0x10) | CPUIDLE_FLAG_TLB_FLUSHED,
  		.exit_latency = 70,
 -		.target_residency = 100,
-+		.target_residency = 1000,
++		.target_residency = 900,
  		.enter = &intel_idle,
  		.enter_s2idle = intel_idle_s2idle, },
  	{
@@ -166,7 +166,7 @@ index 0b66e25c0e2d..406b41b387d5 100644
  		.flags = MWAIT2flg(0x20) | CPUIDLE_FLAG_TLB_FLUSHED,
  		.exit_latency = 85,
 -		.target_residency = 200,
-+		.target_residency = 600,
++		.target_residency = 500,
  		.enter = &intel_idle,
  		.enter_s2idle = intel_idle_s2idle, },
  	{
@@ -175,7 +175,7 @@ index 0b66e25c0e2d..406b41b387d5 100644
  		.flags = MWAIT2flg(0x33) | CPUIDLE_FLAG_TLB_FLUSHED,
  		.exit_latency = 124,
 -		.target_residency = 800,
-+		.target_residency = 3000,
++		.target_residency = 2400,
  		.enter = &intel_idle,
  		.enter_s2idle = intel_idle_s2idle, },
  	{
@@ -184,7 +184,7 @@ index 0b66e25c0e2d..406b41b387d5 100644
  		.flags = MWAIT2flg(0x40) | CPUIDLE_FLAG_TLB_FLUSHED,
  		.exit_latency = 200,
 -		.target_residency = 800,
-+		.target_residency = 3200,
++		.target_residency = 3000,
  		.enter = &intel_idle,
  		.enter_s2idle = intel_idle_s2idle, },
  	{
@@ -193,7 +193,7 @@ index 0b66e25c0e2d..406b41b387d5 100644
  		.flags = MWAIT2flg(0x50) | CPUIDLE_FLAG_TLB_FLUSHED,
  		.exit_latency = 480,
 -		.target_residency = 5000,
-+		.target_residency = 9000,
++		.target_residency = 8000,
  		.enter = &intel_idle,
  		.enter_s2idle = intel_idle_s2idle, },
  	{
@@ -211,7 +211,7 @@ index 0b66e25c0e2d..406b41b387d5 100644
  		.flags = MWAIT2flg(0x01) | CPUIDLE_FLAG_ALWAYS_ENABLE,
  		.exit_latency = 10,
 -		.target_residency = 20,
-+		.target_residency = 300,
++		.target_residency = 120,
  		.enter = &intel_idle,
  		.enter_s2idle = intel_idle_s2idle, },
  	{
@@ -225,7 +225,7 @@ https://clearlinux.org
  		.flags = MWAIT2flg(0x01) | CPUIDLE_FLAG_ALWAYS_ENABLE,
  		.exit_latency = 4,
 -		.target_residency = 4,
-+		.target_residency = 40,
++		.target_residency = 24,
  		.enter = &intel_idle,
  		.enter_s2idle = intel_idle_s2idle, },
  	{
@@ -234,7 +234,7 @@ https://clearlinux.org
  		.flags = MWAIT2flg(0x20) | CPUIDLE_FLAG_TLB_FLUSHED,
  		.exit_latency = 170,
 -		.target_residency = 600,
-+		.target_residency = 900,
++		.target_residency = 800,
  		.enter = &intel_idle,
  		.enter_s2idle = intel_idle_s2idle, },
  	{
@@ -243,7 +243,7 @@ https://clearlinux.org
  					   CPUIDLE_FLAG_UNUSABLE,
  		.exit_latency = 2,
 -		.target_residency = 4,
-+		.target_residency = 40,
++		.target_residency = 24,
  		.enter = &intel_idle,
  		.enter_s2idle = intel_idle_s2idle, },
  	{
