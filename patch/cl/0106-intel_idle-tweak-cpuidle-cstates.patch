@@ -166,7 +166,7 @@ index 0b66e25c0e2d..406b41b387d5 100644
  		.flags = MWAIT2flg(0x20) | CPUIDLE_FLAG_TLB_FLUSHED,
  		.exit_latency = 85,
 -		.target_residency = 200,
-+		.target_residency = 500,
++		.target_residency = 1200,
  		.enter = &intel_idle,
  		.enter_s2idle = intel_idle_s2idle, },
  	{
