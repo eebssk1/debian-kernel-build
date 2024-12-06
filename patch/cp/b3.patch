@@ -196,13 +196,13 @@
  
  	if (unlikely(!bbr->has_seen_rtt && tp->srtt_us))
  		bbr_init_pacing_rate_from_rtt(sk);
--	if (bbr_full_bw_reached(sk) || rate > sk->sk_pacing_rate)
-+	if (bbr_full_bw_reached(sk) || rate > sk->sk_pacing_rate) {
-+		if (unlikely(bbr->min_rtt_us <= 500)) {
+-	if (bbr_full_bw_reached(sk) || rate > READ_ONCE(sk->sk_pacing_rate))
++	if (bbr_full_bw_reached(sk) || rate > READ_ONCE(sk->sk_pacing_rate)) {
++		if (unlikely(READ_ONCE(bbr->min_rtt_us) <= 500)) {
 +			gain = gain > BBR_UNIT ? min(gain, BBR_UNIT * 3 / 2) : gain;
 +			rate = bbr_bw_to_pacing_rate(sk, bw, gain);
 +		}
- 		sk->sk_pacing_rate = rate;
+ 		WRITE_ONCE(sk->sk_pacing_rate, rate);
 +	}
  }
  
@@ -212,7 +212,7 @@
  
  	cwnd = max_t(u32, cwnd, bbr_param(sk, cwnd_min_target));
 +
-+	if (unlikely(bbr->min_rtt_us <= 500)) {
++	if (unlikely(READ_ONCE(bbr->min_rtt_us) <= 500)) {
 +		cwnd = max_t(u32, cwnd, 32);
 +		if (bbr->mode == BBR_PROBE_RTT)
 +			cwnd = max_t(u32, cwnd / 2, 15);
@@ -228,7 +228,7 @@
  	    bbr_param(sk, ecn_factor) &&
 -	    (bbr->min_rtt_us <= bbr_ecn_max_rtt_us ||
 -	     !bbr_ecn_max_rtt_us))
-+	    (bbr->min_rtt_us > 500 && (bbr->min_rtt_us <= bbr_ecn_max_rtt_us ||
++	    (READ_ONCE(bbr->min_rtt_us) > 500 && (READ_ONCE(bbr->min_rtt_us) <= bbr_ecn_max_rtt_us ||
 +	     !bbr_ecn_max_rtt_us)))
  		bbr->ecn_eligible = 1;
  
