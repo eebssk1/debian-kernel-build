@@ -1,0 +1,29 @@
+From dccbc0ca6c05ae315967a603870d553c231a68a1 Mon Sep 17 00:00:00 2001
+From: Alexandre Frade <kernel@xanmod.org>
+Date: Mon, 16 Sep 2024 00:55:35 +0000
+Subject: [PATCH 02/18] XANMOD: kbuild: Add GCC SMS-based modulo scheduling
+ flags
+
+Signed-off-by: Alexandre Frade <kernel@xanmod.org>
+---
+ Makefile | 4 ++++
+ 1 file changed, 4 insertions(+)
+
+diff --git a/Makefile b/Makefile
+index 68a8faff2543..59a938a0c335 100644
+--- a/Makefile
++++ b/Makefile
+@@ -800,6 +800,10 @@ KBUILD_CFLAGS	+= -fno-delete-null-pointer-checks
+ 
+ ifdef CONFIG_CC_OPTIMIZE_FOR_PERFORMANCE
+ KBUILD_CFLAGS += -O2
++# Perform swing modulo scheduling immediately before the first scheduling pass.
++# This pass looks at innermost loops and reorders their instructions by
++# overlapping different iterations.
++KBUILD_CFLAGS += $(call cc-option,-fmodulo-sched -fmodulo-sched-allow-regmoves)
+ KBUILD_RUSTFLAGS += -Copt-level=2
+ else ifdef CONFIG_CC_OPTIMIZE_FOR_SIZE
+ KBUILD_CFLAGS += -Os
+-- 
+2.45.2
+

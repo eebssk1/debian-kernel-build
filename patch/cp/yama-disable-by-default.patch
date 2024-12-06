@@ -27,6 +27,6 @@ index efac68556b45..95ff3e778a17 100644
  {
 -	pr_info("Yama: becoming mindful.\n");
 +	pr_info("Yama: disabled by default; enable with sysctl kernel.yama.*\n");
- 	security_add_hooks(yama_hooks, ARRAY_SIZE(yama_hooks), "yama");
+ 	security_add_hooks(yama_hooks, ARRAY_SIZE(yama_hooks), &yama_lsmid);
  	yama_init_sysctl();
  	return 0;
