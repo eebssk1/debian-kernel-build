@@ -26,7 +26,7 @@ index 9c3ada74ffb1..c4aef0bb2661 100644
   * The default maximum commit age, in seconds.
   */
 -#define JBD2_DEFAULT_MAX_COMMIT_AGE 5
-+#define JBD2_DEFAULT_MAX_COMMIT_AGE 12
++#define JBD2_DEFAULT_MAX_COMMIT_AGE 8
  
  #ifdef CONFIG_JBD2_DEBUG
  /*

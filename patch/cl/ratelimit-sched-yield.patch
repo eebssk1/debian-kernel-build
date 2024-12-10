@@ -17,7 +17,7 @@ diff --git a/kernel/sched/syscalls.c b/kernel/sched/syscalls.c
 index ae1b42775ef9..441ac65f4f15 100644
 --- a/kernel/sched/syscalls.c
 +++ b/kernel/sched/syscalls.c
-@@ -1456,10 +1456,22 @@ SYSCALL_DEFINE3(sched_getaffinity, pid_t, pid, unsigned int, len,
+@@ -1456,10 +1456,25 @@ SYSCALL_DEFINE3(sched_getaffinity, pid_t, pid, unsigned int, len,
  	return ret;
  }
  
@@ -27,16 +27,19 @@ index ae1b42775ef9..441ac65f4f15 100644
  {
  	struct rq_flags rf;
  	struct rq *rq;
-+	int cpu = raw_smp_processor_id();
++	unsigned long l_yield = this_cpu_read(last_yield);
++	unsigned long cur_jif;
 +
 +	cond_resched();
 +
 +	/* rate limit yielding to something sensible */
++	cur_jif = READ_ONCE(jiffies);
 +
-+	if (unlikely(!time_after(jiffies, per_cpu(last_yield, cpu))))
-+		return;
++	if (unlikely(!time_after(cur_jif, l_yield)))
++		if(likely(!(l_yield >= HZ/4 && cur_jif <= l_yield - (HZ/4))))
++			return;
 +
-+	per_cpu(last_yield, cpu) = jiffies;
++	this_cpu_write(last_yield, cur_jif);
  
  	rq = this_rq_lock_irq(&rf);
  
