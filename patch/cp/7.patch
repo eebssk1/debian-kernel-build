@@ -1,0 +1,20 @@
+--- a/kernel/locking/rwsem.c	2024-12-05 16:35:22.000000000 +0000
++++ b/kernel/locking/rwsem.c	2024-12-10 00:49:59.116188869 +0000
+@@ -747,7 +747,7 @@
+ 	struct task_struct *new, *owner;
+ 	unsigned long flags, new_flags;
+ 	enum owner_state state;
+-	int i = 0;
++	volatile u16 i = 0;
+ 
+ 	lockdep_assert_preemption_disabled();
+ 
+@@ -784,7 +784,7 @@
+ 			break;
+ 		}
+ 
+-		if (i++ > 1000)
++		if (i++ > 360)
+ 			cpu_relax();
+ 	}
+ 

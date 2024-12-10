@@ -52,10 +52,10 @@
 -	BBR_UNIT * 91 / 100,	/* DOWN: drain queue and/or yield bw */
 -	BBR_UNIT,		/* CRUISE: try to use pipe w/ some headroom */
 -	BBR_UNIT,		/* REFILL: refill pipe to estimated 100% */
-+	BBR_UNIT * 14 / 5,	/* UP: probe for more available bw */
++	BBR_UNIT * 3,	/* UP: probe for more available bw */
 +	BBR_UNIT * 22 / 25,	/* DOWN: drain queue and/or yield bw */
-+	BBR_UNIT * 133 / 100,	/* CRUISE: try to use pipe w/ some headroom */
-+	BBR_UNIT * 71 / 50,	/* REFILL: refill pipe to estimated 100% */
++	BBR_UNIT * 33 / 25,	/* CRUISE: try to use pipe w/ some headroom */
++	BBR_UNIT * 36 / 25,	/* REFILL: refill pipe to estimated 100% */
  };
  enum bbr_pacing_gain_phase {
  	BBR_BW_PROBE_UP		= 0,  /* push up inflight to probe for bw/vol */
@@ -64,15 +64,15 @@
   * needs at least 4 packets in flight:
   */
 -static const u32 bbr_cwnd_min_target = 4;
-+static const u32 bbr_cwnd_min_target = 10;
++static const u32 bbr_cwnd_min_target = 11;
  
  /* To estimate if BBR_STARTUP or BBR_BW_PROBE_UP has filled pipe... */
  /* If bw has increased significantly (1.25x), there may be more bw available: */
 -static const u32 bbr_full_bw_thresh = BBR_UNIT * 5 / 4;
-+static const u32 bbr_full_bw_thresh = BBR_UNIT *  113 / 100;
++static const u32 bbr_full_bw_thresh = BBR_UNIT *  28 / 25;
  /* But after 3 rounds w/o significant bw growth, estimate pipe is full: */
 -static const u32 bbr_full_bw_cnt = 3;
-+static const u32 bbr_full_bw_cnt = 6;
++static const u32 bbr_full_bw_cnt = 7;
  
  /* Gain factor for adding extra_acked to target cwnd: */
 -static const int bbr_extra_acked_gain = BBR_UNIT;
@@ -165,12 +165,12 @@
   *  BDP = 25Mbps * .030sec /(1514bytes) = 61.9 packets
   */
 -static const u32 bbr_bw_probe_max_rounds = 63;
-+static const u32 bbr_bw_probe_max_rounds = 24;
++static const u32 bbr_bw_probe_max_rounds = 25;
  
  /* Max amount of randomness to inject in round counting for Reno-coexistence.
   */
 -static const u32 bbr_bw_probe_rand_rounds = 2;
-+static const u32 bbr_bw_probe_rand_rounds = 5;
++static const u32 bbr_bw_probe_rand_rounds = 4;
  
  /* Use BBR-native probe time scale starting at this many usec.
   * We aim to be fair with Reno/CUBIC up to an inter-loss time epoch of at least:

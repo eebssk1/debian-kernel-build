@@ -8,7 +8,7 @@ index 4e787285fc66..3e045f6eb6ee 100644
  {
 +	int reclaimable, reclaim_threshold;
 +
-+	reclaim_threshold = 64 * 1024;
++	reclaim_threshold = 48 * 1024;
  	if (!sk_has_account(sk))
  		return;
  	sk_forward_alloc_add(sk, size);
