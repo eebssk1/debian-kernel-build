@@ -73,6 +73,10 @@ elif [ "$1" = "server_small" ]; then
 export KCFLAGS="$KCFLAGS -mtune=broadwell"
 cp ../config_serm .config || exit 1
 elif [ "$1" = "server_small_a" ]; then
+if [ x$2 != xgcc ]; then
+echo "llvm build is fauty, skip..."
+exit 0
+fi
 export KCFLAGS="$KCFLAGS -mtune=znver2"
 cp ../config_serm .config || exit 1
 sed -i 's/-x64v3-sm/-x64v3a-sm/' .config
