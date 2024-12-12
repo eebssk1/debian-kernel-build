@@ -15,7 +15,7 @@ jobs:
     strategy:
       matrix:
         compiler: [llvm, gcc]
-        target: [desktop, server_large, server_small, server_small_2]
+        target: [desktop, server_large, server_small, server_small_2, server_small_a]
     env:
       GZIP: -8
 
