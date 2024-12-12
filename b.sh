@@ -70,10 +70,14 @@ elif [ "$1" = "server_large" ]; then
 export KCFLAGS="$KCFLAGS -mtune=broadwell"
 cp ../config_serl .config || exit 1
 elif [ "$1" = "server_small" ]; then
-export KCFLAGS="$KCFLAGS -mtune=skylake"
+export KCFLAGS="$KCFLAGS -mtune=broadwell"
 cp ../config_serm .config || exit 1
+elif [ "$1" = "server_small_a" ]; then
+export KCFLAGS="$KCFLAGS -mtune=znver2"
+cp ../config_serm .config || exit 1
+sed -i 's/-x64v3-sm/-x64v3a-sm/' .config
 elif [ "$1" = "server_small_2" ]; then
-export KCFLAGS="$KCFLAGS -mtune=westmere"
+export KCFLAGS="$KCFLAGS -mtune=ivybridge"
 cp ../config_ser2 .config || exit 1
 else
 echo "No such target!"
