@@ -60,7 +60,7 @@ hash -r
 if [ x$2 = xgcc ]; then
 KCFLAGS="-fipa-pta -D__1ENABLE_AGGRESSIVE_GRAPHITE9__ @$PWD/../gp.txt"
 else
-KCFLAGS="-mllvm --enable-knowledge-retention=true -mllvm --polly=true -mllvm --polly-vectorizer=stripmine -mllvm --polly-default-tile-size=32 -mllvm --polly-2nd-level-default-tile-size=8  -mllvm --polly-2nd-level-tiling=true -mllvm --polly-run-inliner=true -mllvm --polly-opt-max-constant-term=48 -mllvm --polly-opt-max-coefficient=48  -mllvm --polly-register-tiling=true -mllvm --polly-run-dce=true -mllvm --polly-detect-profitability-min-per-loop-insts=52 -mllvm --polly-invariant-load-hoisting=true -mllvm --extra-vectorizer-passes=true -mllvm --enable-loop-flatten=true -mllvm --enable-gvn-hoist=true -mllvm --enable-matrix=true -mllvm --enable-constraint-elimination=true -mllvm --enable-module-inliner=true -mllvm --thinlto-synthesize-entry-counts=true"
+KCFLAGS="-mllvm --enable-knowledge-retention=true -mllvm --polly=true -mllvm --polly-vectorizer=stripmine -mllvm --polly-default-tile-size=30 -mllvm --polly-2nd-level-default-tile-size=8  -mllvm --polly-2nd-level-tiling=true -mllvm --polly-run-inliner=true -mllvm --polly-opt-max-constant-term=45 -mllvm --polly-opt-max-coefficient=45  -mllvm --polly-register-tiling=true -mllvm --polly-run-dce=true -mllvm --polly-detect-profitability-min-per-loop-insts=56 -mllvm --polly-invariant-load-hoisting=true -mllvm --extra-vectorizer-passes=true -mllvm --enable-loop-flatten=true -mllvm --enable-gvn-hoist=true -mllvm --enable-matrix=true -mllvm --enable-constraint-elimination=true -mllvm --enable-module-inliner=true -mllvm --thinlto-synthesize-entry-counts=true"
 fi
 
 if [ "$1" = "desktop" ]; then
@@ -73,13 +73,9 @@ elif [ "$1" = "server_small" ]; then
 export KCFLAGS="$KCFLAGS -mtune=broadwell"
 cp ../config_serm .config || exit 1
 elif [ "$1" = "server_small_a" ]; then
-if [ x$2 != xgcc ]; then
-echo "llvm build is fauty, skip..."
-exit 0
-fi
 export KCFLAGS="$KCFLAGS -mtune=znver2"
-cp ../config_serm .config || exit 1
-sed -i 's/-x64v3-sm/-x64v3a-sm/' .config
+cp ../config_ser2 .config || exit 1
+sed -i 's/-x64v2-sm/-x64v2a-sm/' .config
 elif [ "$1" = "server_small_2" ]; then
 export KCFLAGS="$KCFLAGS -mtune=ivybridge"
 cp ../config_ser2 .config || exit 1
