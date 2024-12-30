@@ -1,0 +1,48 @@
+--- a/lib/Kconfig.debug	2024-12-30 09:56:33.674179613 +0000
++++ b/lib/Kconfig.debug	2024-12-30 09:35:32.183197909 +0000
+@@ -525,6 +525,13 @@
+ 
+ 	  It is mainly for debug and performance tuning use.
+ 
++config DEBUG_FORCE_FUNCTION_ALIGN_32B
++        bool "Force all function address 32B aligned"
++        depends on EXPERT && (X86_64 || ARM64 || PPC32 || PPC64 || ARC || RISCV || S390) && (!DEBUG_FORCE_FUNCTION_ALIGN_64B)
++        select FUNCTION_ALIGNMENT_32B
++        help
++          32 bit alignment
++
+ #
+ # Select this config option from the architecture Kconfig, if it
+ # is preferred to always offer frame pointers as a config
+
+--- a/Makefile	2024-12-11 05:53:42.339779501 +0000
++++ b/Makefile	2024-12-31 06:19:05.822169910 +0000
+@@ -972,6 +972,12 @@
+ 
+ ifneq ($(CONFIG_FUNCTION_ALIGNMENT),0)
+ KBUILD_CFLAGS += -falign-functions=$(CONFIG_FUNCTION_ALIGNMENT)
++ifeq ($(shell expr $(CONFIG_FUNCTION_ALIGNMENT) \> 8), 1)
++KBUILD_CFLAGS += $(call cc-option, -fmin-function-alignment=8)
++endif
++ifeq ($(shell expr $(CONFIG_FUNCTION_ALIGNMENT) \> 16), 1)
++KBUILD_CFLAGS += $(call cc-option, -flimit-function-alignment)
++endif
+ endif
+ 
+ # arch Makefile may override CC so keep this after arch Makefile is included
+
+--- a/arch/x86/Makefile	2024-12-31 06:35:00.287699967 +0000
++++ b/arch/x86/Makefile	2024-12-31 06:35:10.032404710 +0000
+@@ -157,10 +157,10 @@
+         KBUILD_CFLAGS += -m64
+ 
+         # Align jump targets to 1 byte, not the default 16 bytes:
+-        KBUILD_CFLAGS += $(call cc-option,-falign-jumps=1)
++        KBUILD_CFLAGS += $(call cc-option,-falign-jumps=2)
+ 
+         # Pack loops tightly as well:
+-        KBUILD_CFLAGS += $(call cc-option,-falign-loops=1)
++        KBUILD_CFLAGS += $(call cc-option,-falign-loops=2)
+ 
+         # Don't autogenerate traditional x87 instructions
+         KBUILD_CFLAGS += -mno-80387
