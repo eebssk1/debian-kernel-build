@@ -1,0 +1,17 @@
+--- a/net/sched/sch_sfq.c	2024-12-09 16:55:55.000000000 +0000
++++ b/net/sched/sch_sfq.c	2025-01-03 13:22:02.510816133 +0000
+@@ -71,11 +71,11 @@
+ 
+ 	It is easy to increase these values, but not in flight.  */
+ 
+-#define SFQ_MAX_DEPTH		127 /* max number of packets per flow */
+-#define SFQ_DEFAULT_FLOWS	128
++#define SFQ_MAX_DEPTH		255 /* max number of packets per flow */
++#define SFQ_DEFAULT_FLOWS	256
+ #define SFQ_MAX_FLOWS		(0x10000 - SFQ_MAX_DEPTH - 1) /* max number of flows */
+ #define SFQ_EMPTY_SLOT		0xffff
+-#define SFQ_DEFAULT_HASH_DIVISOR 1024
++#define SFQ_DEFAULT_HASH_DIVISOR 2048
+ 
+ /* We use 16 bits to store allot, and want to handle packets up to 64K
+  * Scale allot by 8 (1<<3) so that no overflow occurs.
