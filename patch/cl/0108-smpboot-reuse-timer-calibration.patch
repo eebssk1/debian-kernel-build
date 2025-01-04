@@ -25,4 +25,3 @@ index a698196377be..5f3ee7c31c8a 100644
  		return cpu_data(sibling).loops_per_jiffy;
 -- 
 https://clearlinux.org
-

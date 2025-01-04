@@ -25,4 +25,3 @@ index 28ff2a820f7c..c4f240da8d70 100644
  	init_net.ipv4.sysctl_tcp_wmem[1] = 16*1024;
 -- 
 https://clearlinux.org
-

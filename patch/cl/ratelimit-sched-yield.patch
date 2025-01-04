@@ -15,9 +15,9 @@ Signed-off-by: Colin Ian King <colin.i.king@intel.com>
 
 diff --git a/kernel/sched/syscalls.c b/kernel/sched/syscalls.c
 index ae1b42775ef9..441ac65f4f15 100644
---- a/kernel/sched/syscalls.c
-+++ b/kernel/sched/syscalls.c
-@@ -1456,10 +1456,25 @@ SYSCALL_DEFINE3(sched_getaffinity, pid_t, pid, unsigned int, len,
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -1456,10 +1456,25 @@
  	return ret;
  }
  

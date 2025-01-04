@@ -23,4 +23,3 @@ index 2048138ce54b..903ead0afacb 100644
  	switch (sysctl_sched_tunable_scaling) {
 -- 
 2.42.1
-

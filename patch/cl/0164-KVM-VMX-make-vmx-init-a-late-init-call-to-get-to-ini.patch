@@ -25,4 +25,3 @@ index bc6f0fea48b4..e671fbe70d5a 100644
 +late_initcall(vmx_init);
 -- 
 2.42.0
-

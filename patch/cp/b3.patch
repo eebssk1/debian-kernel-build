@@ -196,13 +196,13 @@
  
  	if (unlikely(!bbr->has_seen_rtt && tp->srtt_us))
  		bbr_init_pacing_rate_from_rtt(sk);
--	if (bbr_full_bw_reached(sk) || rate > READ_ONCE(sk->sk_pacing_rate))
-+	if (bbr_full_bw_reached(sk) || rate > READ_ONCE(sk->sk_pacing_rate)) {
+-	if (bbr_full_bw_reached(sk) || rate > sk->sk_pacing_rate)
++	if (bbr_full_bw_reached(sk) || rate > sk->sk_pacing_rate) {
 +		if (unlikely(bbr->min_rtt_us <= 500)) {
 +			gain = gain > BBR_UNIT ? min(gain, BBR_UNIT * 8 / 5) : gain;
 +			rate = bbr_bw_to_pacing_rate(sk, bw, gain);
 +		}
- 		WRITE_ONCE(sk->sk_pacing_rate, rate);
+ 		sk->sk_pacing_rate = rate;
 +	}
  }
  

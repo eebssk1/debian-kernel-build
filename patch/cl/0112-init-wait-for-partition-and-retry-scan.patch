@@ -40,11 +40,11 @@ https://clearlinux.org
 -		return devt_from_partuuid(name + 9, devt);
 +	if (strncmp(name, "PARTUUID=", 9) == 0) {
 +		int res;
-+		int  needtowait = 40<<1;
++		int  needtowait = 24<<1;
 +		res = devt_from_partuuid(name + 9, devt);
 +		if (!res) return res;
 +		while (res && needtowait) {
-+			msleep(500);
++			msleep(300);
 +			res = devt_from_partuuid(name + 9, devt);
 +			needtowait--;
 +		}

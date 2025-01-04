@@ -35,13 +35,13 @@ echo Revesing $a
 patch -R -p1 -i $a || exit 128
 done
 
-for a in ../patch/cp/*.patch; do
+for a in ../patch/cl/*.patch; do
 [ -f "$a" ] || continue
 echo Applying $a
 patch -f -p1 -i $a || exit 128
 done
 
-for a in ../patch/cl/*.patch; do
+for a in ../patch/cp/*.patch; do
 [ -f "$a" ] || continue
 echo Applying $a
 patch -f -p1 -i $a || exit 128

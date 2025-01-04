@@ -1,0 +1,11 @@
+--- a/kernel/sched/fair.c	2025-01-04 12:16:32.972059584 +0000
++++ b/kernel/sched/fair.c	2025-01-04 12:20:00.803149248 +0000
+@@ -8184,7 +8184,7 @@
+ 		    cpumask_test_cpu(cpu, p->cpus_ptr))
+ 			return cpu;
+ 
+-		if (sched_energy_enabled()) {
++		if (sched_energy_enabled() && num_online_cpus() > 2) {
+ 			new_cpu = find_energy_efficient_cpu(p, prev_cpu);
+ 			if (new_cpu >= 0)
+ 				return new_cpu;

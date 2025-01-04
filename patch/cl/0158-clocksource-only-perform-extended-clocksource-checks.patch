@@ -34,4 +34,3 @@ index 82338773602c..d84f0e29452e 100644
  		for (i = 0; i < ACPI_PM_READ_CHECKS; i++) {
 -- 
 2.40.1
-
