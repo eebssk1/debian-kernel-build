@@ -5,9 +5,11 @@ echo "No target!"
 exit 1
 fi
 
+if [ "$(whoami)" = "root" ]; then
 apt-get update
 apt-get upgrade -y
-apt-get install -y libelf-dev libssl-dev dwarves bc kmod cpio python3 zstd debhelper pahole|| exit 1
+apt-get install -y libelf-dev libssl-dev dwarves bc kmod cpio python3 zstd debhelper pahole || exit 1
+fi
 
 FILE=$(cat version)-xanmod1.tar.bz2
 
@@ -73,9 +75,10 @@ elif [ "$1" = "server_small" ]; then
 export KCFLAGS="$KCFLAGS -mtune=broadwell"
 cp ../config_serm .config || exit 1
 elif [ "$1" = "server_small_a" ]; then
-export KCFLAGS="$KCFLAGS -mtune=znver2"
+export KCFLAGS="$KCFLAGS -mtune=znver3"
 cp ../config_ser2 .config || exit 1
-sed -i 's/-x64v2-sm/-x64v2a-sm/' .config
+sed -i 's/-ivy-sm/-ze2-sm/' .config
+sed -i 's/MIVYBRIDGE/MZEN2/' .config
 elif [ "$1" = "server_small_2" ]; then
 export KCFLAGS="$KCFLAGS -mtune=ivybridge"
 cp ../config_ser2 .config || exit 1

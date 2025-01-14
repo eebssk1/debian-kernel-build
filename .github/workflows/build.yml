@@ -16,6 +16,9 @@ jobs:
       matrix:
         compiler: [llvm, gcc]
         target: [desktop, server_large, server_small, server_small_2, server_small_a]
+        exclude:
+          - target: server_small_a
+            compiler: llvm
     env:
       GZIP: -8
 
