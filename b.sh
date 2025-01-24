@@ -27,9 +27,15 @@ mv llvm_18.1.4 /opt/newclang
 chown -R root:root /opt/newclang
 fi
 
-echo VER=$(cat version) >> $GITHUB_ENV
+echo VER=6.6.74 >> $GITHUB_ENV
 
 cd linux-* || exit 1
+
+for a in ../patch/up/*; do
+[ -f "$a" ] || continue
+echo updating with  $a
+patch -N -f -p1 -i $a || exit 128
+done
 
 for a in ../patch/rev/*.patch; do
 [ -f "$a" ] || continue
