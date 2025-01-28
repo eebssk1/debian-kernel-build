@@ -5,7 +5,7 @@
  
  /* Maximal number of ACKs sent quickly to accelerate slow-start. */
 -#define TCP_MAX_QUICKACKS	16U
-+#define TCP_MAX_QUICKACKS	19U
++#define TCP_MAX_QUICKACKS	18U
  
  /* Maximal number of window scale according to RFC1323 */
  #define TCP_MAX_WSCALE		14U
@@ -14,7 +14,7 @@
  				 */
  
 -#define TCP_TIMEWAIT_LEN (60*HZ) /* how long to wait to destroy TIME-WAIT
-+#define TCP_TIMEWAIT_LEN (56*HZ) /* how long to wait to destroy TIME-WAIT
++#define TCP_TIMEWAIT_LEN (55*HZ) /* how long to wait to destroy TIME-WAIT
  				  * state, about 60 seconds	*/
  #define TCP_FIN_TIMEOUT	TCP_TIMEWAIT_LEN
                                   /* BSD style FIN_WAIT2 deadlock breaker.
@@ -35,16 +35,16 @@
  #endif
 -#define TCP_RTO_MAX	((unsigned)(120*HZ))
 -#define TCP_RTO_MIN	((unsigned)(HZ/5))
-+#define TCP_RTO_MAX	((unsigned)(90*HZ))
-+#define TCP_RTO_MIN	((unsigned)(HZ/4))
++#define TCP_RTO_MAX	((unsigned)(95*HZ))
++#define TCP_RTO_MIN	((unsigned)(HZ/6))
  #define TCP_TIMEOUT_MIN	(2U) /* Min timeout for TCP timers in jiffies */
  
  #define TCP_TIMEOUT_MIN_US (2*USEC_PER_MSEC) /* Min TCP timeout in microsecs */
  
 -#define TCP_TIMEOUT_INIT ((unsigned)(1*HZ))	/* RFC6298 2.1 initial RTO value	*/
 -#define TCP_TIMEOUT_FALLBACK ((unsigned)(3*HZ))	/* RFC 1122 initial RTO value, now
-+#define TCP_TIMEOUT_INIT ((unsigned)(HZ*3/5))	/* RFC6298 2.1 initial RTO value	*/
-+#define TCP_TIMEOUT_FALLBACK ((unsigned)(HZ*8/5))	/* RFC 1122 initial RTO value, now
++#define TCP_TIMEOUT_INIT ((unsigned)(HZ*11/20))	/* RFC6298 2.1 initial RTO value	*/
++#define TCP_TIMEOUT_FALLBACK ((unsigned)(HZ*3/2))	/* RFC 1122 initial RTO value, now
  						 * used as a fallback RTO for the
  						 * initial data transmission if no
  						 * valid RTT sample has been acquired,
