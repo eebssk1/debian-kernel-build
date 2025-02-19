@@ -27,7 +27,7 @@ mv llvm_18.1.4 /opt/newclang
 chown -R root:root /opt/newclang
 fi
 
-echo VER=6.6.76 >> $GITHUB_ENV
+echo VER=6.6.78 >> $GITHUB_ENV
 
 cd linux-* || exit 1
 
