@@ -17,7 +17,7 @@
 +		if (pgdat->kswapd) {
 +			struct sched_param sp = { .sched_priority = 0 };
 +			sched_setscheduler_nocheck(pgdat->kswapd, SCHED_BATCH, &sp);
-+			set_user_nice(pgdat->kswapd, -1);
++			set_user_nice(pgdat->kswapd, -2);
 +		}
  	}
  	pgdat_kswapd_unlock(pgdat);
@@ -65,9 +65,9 @@
 +
 +static void setsched(unsigned int cpu) {
 +	struct task_struct *tsk = per_cpu(ksoftirqd, cpu);
-+	struct sched_param sp = { .sched_priority = 1 };
-+       sched_setscheduler_nocheck(tsk, SCHED_RR, &sp);
-+	set_user_nice(tsk, -1);
++	struct sched_param sp = { .sched_priority = 2 };
++   sched_setscheduler_nocheck(tsk, SCHED_RR, &sp);
++	set_user_nice(tsk, -2);
 +}
 +
  static struct smp_hotplug_thread softirq_threads = {
@@ -87,7 +87,7 @@
  		sp.sched_priority = kthread_prio;
  		sched_setscheduler_nocheck(t, SCHED_FIFO, &sp);
 +	} else {
-+		set_user_nice(t, -1);
++		set_user_nice(t, -2);
  	}
  	rnp = rcu_get_root();
  	raw_spin_lock_irqsave_rcu_node(rnp, flags);

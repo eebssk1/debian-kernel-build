@@ -5,7 +5,7 @@
  
  # Limit inlining across translation units to reduce binary size
 -KBUILD_LDFLAGS += -mllvm -import-instr-limit=5
-+KBUILD_LDFLAGS += -mllvm -import-instr-limit=5 --lto-O3
++KBUILD_LDFLAGS += -mllvm -import-instr-limit=8 --lto-O3
  
  # Check for frame size exceeding threshold during prolog/epilog insertion
  # when using lld < 13.0.0.

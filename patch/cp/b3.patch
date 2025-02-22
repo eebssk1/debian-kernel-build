@@ -5,16 +5,16 @@
  
  /* Window length of min_rtt filter (in sec): */
 -static const u32 bbr_min_rtt_win_sec = 10;
-+static const u32 bbr_min_rtt_win_sec = 20;
++static const u32 bbr_min_rtt_win_sec = 18;
  /* Minimum time (in ms) spent at bbr_cwnd_min_target in BBR_PROBE_RTT mode: */
 -static const u32 bbr_probe_rtt_mode_ms = 200;
-+static const u32 bbr_probe_rtt_mode_ms = 135;
++static const u32 bbr_probe_rtt_mode_ms = 140;
  /* Window length of probe_rtt_min_us filter (in ms), and consequently the
   * typical interval between PROBE_RTT mode entries. The default is 5000ms.
   * Note that bbr_probe_rtt_win_ms must be <= bbr_min_rtt_win_sec * MSEC_PER_SEC
   */
 -static const u32 bbr_probe_rtt_win_ms = 5000;
-+static const u32 bbr_probe_rtt_win_ms = 6665;
++static const u32 bbr_probe_rtt_win_ms = 6000;
  /* Proportion of cwnd to estimated BDP in PROBE_RTT, in units of BBR_UNIT: */
 -static const u32 bbr_probe_rtt_cwnd_gain = BBR_UNIT * 1 / 2;
 +static const u32 bbr_probe_rtt_cwnd_gain = BBR_UNIT * 9 / 10;
@@ -69,10 +69,10 @@
  /* To estimate if BBR_STARTUP or BBR_BW_PROBE_UP has filled pipe... */
  /* If bw has increased significantly (1.25x), there may be more bw available: */
 -static const u32 bbr_full_bw_thresh = BBR_UNIT * 5 / 4;
-+static const u32 bbr_full_bw_thresh = BBR_UNIT *  113 / 100;
++static const u32 bbr_full_bw_thresh = BBR_UNIT *  57 / 50;
  /* But after 3 rounds w/o significant bw growth, estimate pipe is full: */
 -static const u32 bbr_full_bw_cnt = 3;
-+static const u32 bbr_full_bw_cnt = 6;
++static const u32 bbr_full_bw_cnt = 5;
  
  /* Gain factor for adding extra_acked to target cwnd: */
 -static const int bbr_extra_acked_gain = BBR_UNIT;
@@ -83,7 +83,7 @@
  static const u32 bbr_ack_epoch_acked_reset_thresh = 1U << 20;
  /* Time period for clamping cwnd increment due to ack aggregation */
 -static const u32 bbr_extra_acked_max_us = 100 * 1000;
-+static const u32 bbr_extra_acked_max_us = 130 * 1000;
++static const u32 bbr_extra_acked_max_us = 124 * 1000;
  
  /* Flags to control BBR ECN-related behavior... */
  
