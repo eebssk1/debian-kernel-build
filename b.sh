@@ -11,11 +11,18 @@ apt-get upgrade -y
 apt-get install -y libelf-dev libssl-dev dwarves bc kmod cpio python3 zstd debhelper pahole || exit 1
 fi
 
-FILE=$(cat version)-xanmod1.tar.bz2
+FILE=6.6.72-xanmod1.tar.bz2
 
-wget https://gitlab.com/xanmod/linux/-/archive/$FILE
-tar --bzip2 -xf $FILE || exit 1
-rm $FILE
+dlauc() {
+rm -f $FILE || true
+wget https://gitlab.com/xanmod/linux/-/archive/$FILE || false
+tar --bzip2 -xf $FILE || false
+}
+
+dlauc
+while [ $? != 0 ]; do
+dlauc
+done
 
 if [ x$2 = xgcc ]; then
 curl -L https://github.com/eebssk1/aio_tc_build/releases/latest/download/x86_64-linux-gnu-native.tb2 | tar --bz -xf -
@@ -27,7 +34,7 @@ mv llvm_18.1.4 /opt/newclang
 chown -R root:root /opt/newclang
 fi
 
-echo VER=6.6.79 >> $GITHUB_ENV
+echo VER=6.6.80 >> $GITHUB_ENV
 
 cd linux-* || exit 1
 
