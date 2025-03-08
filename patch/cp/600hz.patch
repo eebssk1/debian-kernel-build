@@ -17,7 +17,7 @@
  	default 100 if HZ_100
  	default 250 if HZ_250
  	default 300 if HZ_300
-+	default 600 if HZ_600
  	default 500 if HZ_500
++	default 600 if HZ_600
  	default 1000 if HZ_1000
  

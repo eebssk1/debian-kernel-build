@@ -85,7 +85,7 @@ index 0b66e25c0e2d..406b41b387d5 100644
  		.flags = MWAIT2flg(0x01) | CPUIDLE_FLAG_ALWAYS_ENABLE,
  		.exit_latency = 10,
 -		.target_residency = 20,
-+		.target_residency = 95,
++		.target_residency = 62,
  		.enter = &intel_idle,
  		.enter_s2idle = intel_idle_s2idle, },
  	{
@@ -94,7 +94,7 @@ index 0b66e25c0e2d..406b41b387d5 100644
  		.flags = MWAIT2flg(0x10) | CPUIDLE_FLAG_TLB_FLUSHED,
  		.exit_latency = 40,
 -		.target_residency = 100,
-+		.target_residency = 720,
++		.target_residency = 690,
  		.enter = &intel_idle,
  		.enter_s2idle = intel_idle_s2idle, },
  	{
@@ -103,7 +103,7 @@ index 0b66e25c0e2d..406b41b387d5 100644
  		.flags = MWAIT2flg(0x20) | CPUIDLE_FLAG_TLB_FLUSHED,
  		.exit_latency = 133,
 -		.target_residency = 400,
-+		.target_residency = 1250,
++		.target_residency = 1310,
  		.enter = &intel_idle,
  		.enter_s2idle = intel_idle_s2idle, },
  	{
