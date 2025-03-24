@@ -1,0 +1,32 @@
+--- a/drivers/net/wireless/mediatek/mt76/mt7921/debugfs.c	2025-03-26 08:08:48.313292491 +0000
++++ b/drivers/net/wireless/mediatek/mt76/mt7921/debugfs.c	2025-03-26 08:10:07.023291362 +0000
+@@ -261,6 +261,21 @@
+ 	return 0;
+ }
+ 
++static int
++mt7921_set_tx_pwr(void *data, u64 val)
++{
++	 struct mt792x_dev *dev = data;
++    struct mt76_phy *phy = &dev->mphy;
++    if (val > 63 || val < 1) return -22;
++    mt792x_mutex_acquire(dev);
++    phy->hw->conf.power_level = (int)val;
++    int res = mt76_connac_mcu_set_rate_txpower(phy);
++    mt792x_mutex_release(dev);
++    return res;
++}
++
++DEFINE_DEBUGFS_ATTRIBUTE(fops_settxpwr, NULL, mt7921_set_tx_pwr, "%llu\n");
++
+ int mt7921_init_debugfs(struct mt792x_dev *dev)
+ {
+ 	struct dentry *dir;
+@@ -286,6 +301,7 @@
+ 	debugfs_create_file("idle-timeout", 0600, dir, dev,
+ 			    &fops_pm_idle_timeout);
+ 	debugfs_create_file("chip_reset", 0600, dir, dev, &fops_reset);
++    debugfs_create_file("set_tx_power", 0200, dir, dev, &fops_settxpwr);
+ 	debugfs_create_devm_seqfile(dev->mt76.dev, "runtime_pm_stats", dir,
+ 				    mt792x_pm_stats);
+ 	debugfs_create_file("deep-sleep", 0600, dir, dev, &fops_ds);
