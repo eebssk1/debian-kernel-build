@@ -1,0 +1,18 @@
+--- a/drivers/net/veth.c	2025-04-22 09:25:12.398611699 +0000
++++ b/drivers/net/veth.c	2025-04-22 09:25:05.118611981 +0000
+@@ -1736,7 +1736,6 @@
+ 
+ 	dev->priv_flags &= ~IFF_TX_SKB_SHARING;
+ 	dev->priv_flags |= IFF_LIVE_ADDR_CHANGE;
+-	dev->priv_flags |= IFF_NO_QUEUE;
+ 	dev->priv_flags |= IFF_PHONY_HEADROOM;
+ 
+ 	dev->netdev_ops = &veth_netdev_ops;
+@@ -1855,6 +1854,7 @@
+ 
+ 	peer = rtnl_create_link(net, ifname, name_assign_type,
+ 				&veth_link_ops, tbp, extack);
++	peer->priv_flags |= IFF_NO_QUEUE;
+ 	if (IS_ERR(peer)) {
+ 		put_net(net);
+ 		return PTR_ERR(peer);

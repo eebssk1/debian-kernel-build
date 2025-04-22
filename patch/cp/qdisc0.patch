@@ -1,0 +1,12 @@
+--- a/include/net/sch_generic.h	2025-04-22 07:19:34.885903345 +0000
++++ b/include/net/sch_generic.h	2025-04-22 07:20:26.450901350 +0000
+@@ -598,8 +598,7 @@
+ static inline const struct Qdisc_ops *
+ get_default_qdisc_ops(const struct net_device *dev, int ntx)
+ {
+-	return ntx < dev->real_num_tx_queues ?
+-			default_qdisc_ops : &pfifo_fast_ops;
++	return default_qdisc_ops;
+ }
+ 
+ struct Qdisc_class_common {
