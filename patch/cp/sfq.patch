@@ -6,12 +6,23 @@
  
 -#define SFQ_MAX_DEPTH		127 /* max number of packets per flow */
 -#define SFQ_DEFAULT_FLOWS	128
-+#define SFQ_MAX_DEPTH		255 /* max number of packets per flow */
-+#define SFQ_DEFAULT_FLOWS	256
++#define SFQ_MAX_DEPTH		224 /* max number of packets per flow */
++#define SFQ_DEFAULT_FLOWS	192
  #define SFQ_MAX_FLOWS		(0x10000 - SFQ_MAX_DEPTH - 1) /* max number of flows */
  #define SFQ_EMPTY_SLOT		0xffff
 -#define SFQ_DEFAULT_HASH_DIVISOR 1024
-+#define SFQ_DEFAULT_HASH_DIVISOR 2048
++#define SFQ_DEFAULT_HASH_DIVISOR 512
  
- /* We use 16 bits to store allot, and want to handle packets up to 64K
-  * Scale allot by 8 (1<<3) so that no overflow occurs.
+ /* This type should contain at least SFQ_MAX_DEPTH + 1 + SFQ_MAX_FLOWS values */
+ typedef u16 sfq_index;
+@@ -788,8 +788,9 @@
+ 	q->divisor = SFQ_DEFAULT_HASH_DIVISOR;
+ 	q->maxflows = SFQ_DEFAULT_FLOWS;
+ 	q->quantum = psched_mtu(qdisc_dev(sch));
+-	q->perturb_period = 0;
++	q->perturb_period = 95 * HZ;
+ 	get_random_bytes(&q->perturbation, sizeof(q->perturbation));
++	mod_timer(&q->perturb_timer, jiffies + q->perturb_period);
+ 
+ 	if (opt) {
+ 		int err = sfq_change(sch, opt, extack);

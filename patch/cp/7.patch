@@ -5,7 +5,7 @@
  	unsigned long flags, new_flags;
  	enum owner_state state;
 -	int i = 0;
-+	volatile u16 i = 0;
++	u16 i = 0;
  
  	lockdep_assert_preemption_disabled();
  
@@ -14,7 +14,7 @@
  		}
  
 -		if (i++ > 1000)
-+		if (i++ > 96)
++		if (i++ > 72)
  			cpu_relax();
  	}
  

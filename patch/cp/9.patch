@@ -58,18 +58,25 @@
  endif
  
  ifdef CONFIG_FUNCTION_TRACER
-@@ -976,7 +976,16 @@
+@@ -976,14 +976,23 @@
  export CC_FLAGS_NO_FPU
  
  ifneq ($(CONFIG_FUNCTION_ALIGNMENT),0)
 +ifeq ($(CONFIG_DEBUG_FORCE_FUNCTION_ALIGN_32B_SOFT),y)
 +CONFIG_FUNCTION_ALIGNMENT = 24
 +endif
+ # Set the minimal function alignment. Use the newer GCC option
+ # -fmin-function-alignment if it is available, or fall back to -falign-funtions.
+ # See also CONFIG_CC_HAS_SANE_FUNCTION_ALIGNMENT.
+ ifdef CONFIG_CC_HAS_MIN_FUNCTION_ALIGNMENT
+ KBUILD_CFLAGS += -fmin-function-alignment=$(CONFIG_FUNCTION_ALIGNMENT)
+ else
  KBUILD_CFLAGS += -falign-functions=$(CONFIG_FUNCTION_ALIGNMENT)
+ endif
 +ifeq ($(shell expr $(CONFIG_FUNCTION_ALIGNMENT) \> 8), 1)
 +KBUILD_CFLAGS += $(call cc-option, -fmin-function-alignment=8)
 +endif
-+ifeq ($(shell expr $(CONFIG_FUNCTION_ALIGNMENT) \> 16), 1)
++ifeq ($(shell expr $(CONFIG_FUNCTION_ALIGNMENT) \> 24), 1)
 +KBUILD_CFLAGS += $(call cc-option, -flimit-function-alignment)
 +endif
  endif

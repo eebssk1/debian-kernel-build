@@ -43,11 +43,10 @@ index f730b6fe94a7..ee0ec4ab7d1c 100644
  #if !defined(CONFIG_PREEMPTION) || defined(CONFIG_PREEMPT_DYNAMIC)
  int __sched __cond_resched(void)
  {
--	if (should_resched(0)) {
-+	if (unlikely(should_resched(0))) {
+-	if (should_resched(0) && !irqs_disabled()) {
++	if (unlikely(should_resched(0) && !irqs_disabled())) {
  		preempt_schedule_common();
  		return 1;
  	}
 -- 
 2.39.1
-

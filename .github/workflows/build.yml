@@ -16,6 +16,9 @@ jobs:
       matrix:
         compiler: [llvm, gcc]
         target: [desktop, server_large, server_small, server_small_2, server_small_a]
+        exclude:
+          - target: server_small_a
+            compiler: llvm
     env:
       GZIP: -8
 
@@ -28,7 +31,7 @@ jobs:
         with:
           verbose: 1
           max-size: "960M"
-          key: ${{ matrix.target }}-${{ matrix.compiler }}-b3
+          key: ${{ matrix.target }}-${{ matrix.compiler }}-612
       - name: build
         run: ./b.sh ${{ matrix.target }} ${{ matrix.compiler }}
       - name: upload
