@@ -23,11 +23,11 @@ DOCKER_HOST=$(ip route|awk '/default/ { print $3  }')
 echo Host Inf
 ssh root@$DOCKER_HOST -o "StrictHostKeyChecking=no" -i /user/.ssh/id_docker mount
 ssh root@$DOCKER_HOST -o "StrictHostKeyChecking=no" -i /user/.ssh/id_docker ip addr
-echo "=> Creating swap on ${DOCKER_HOST}"
-ssh root@$DOCKER_HOST -o "StrictHostKeyChecking=no" -i /user/.ssh/id_docker fallocate -l 7G /swapfile
-ssh root@$DOCKER_HOST -o "StrictHostKeyChecking=no" -i /user/.ssh/id_docker chmod 600 /swapfile
-ssh root@$DOCKER_HOST -o "StrictHostKeyChecking=no" -i /user/.ssh/id_docker mkswap /swapfile
-ssh root@$DOCKER_HOST -o "StrictHostKeyChecking=no" -i /user/.ssh/id_docker swapon /swapfile
+#echo "=> Creating swap on ${DOCKER_HOST}"
+#ssh root@$DOCKER_HOST -o "StrictHostKeyChecking=no" -i /user/.ssh/id_docker fallocate -l 7G /swapfile
+#ssh root@$DOCKER_HOST -o "StrictHostKeyChecking=no" -i /user/.ssh/id_docker chmod 600 /swapfile
+#ssh root@$DOCKER_HOST -o "StrictHostKeyChecking=no" -i /user/.ssh/id_docker mkswap /swapfile
+#ssh root@$DOCKER_HOST -o "StrictHostKeyChecking=no" -i /user/.ssh/id_docker swapon /swapfile
 echo "=> Setting sysctl on ${DOCKER_HOST}"
 ssh root@$DOCKER_HOST -o "StrictHostKeyChecking=no" -i /user/.ssh/id_docker sysctl vm.swappiness=66
 ssh root@$DOCKER_HOST -o "StrictHostKeyChecking=no" -i /user/.ssh/id_docker sysctl vm.vfs_cache_pressure=70
@@ -53,12 +53,13 @@ ssh root@$DOCKER_HOST -o "StrictHostKeyChecking=no" -i /user/.ssh/id_docker echo
 ssh root@$DOCKER_HOST -o "StrictHostKeyChecking=no" -i /user/.ssh/id_docker echo 620000 > /sys/kernel/debug/sched/min_granularity_ns
 ssh root@$DOCKER_HOST -o "StrictHostKeyChecking=no" -i /user/.ssh/id_docker echo 360000 > /sys/kernel/debug/sched/wakeup_granularity_ns
 ssh root@$DOCKER_HOST -o "StrictHostKeyChecking=no" -i /user/.ssh/id_docker echo 400000 > /sys/kernel/debug/sched/migration_cost_ns
-
+ssh root@$DOCKER_HOST -o "StrictHostKeyChecking=no" -i /user/.ssh/id_docker dpkg-query -Wf '${Installed-Size}\t${Package}\n' | sort -n | tail -n 100
 ssh root@$DOCKER_HOST -o "StrictHostKeyChecking=no" -i /user/.ssh/id_docker rm -rf /usr/local/lib/android
 ssh root@$DOCKER_HOST -o "StrictHostKeyChecking=no" -i /user/.ssh/id_docker rm -rf /usr/share/dotnet
 ssh root@$DOCKER_HOST -o "StrictHostKeyChecking=no" -i /user/.ssh/id_docker rm -rf /opt/ghc
 ssh root@$DOCKER_HOST -o "StrictHostKeyChecking=no" -i /user/.ssh/id_docker rm -rf /usr/local/.ghcup
-ssh root@$DOCKER_HOST -o "StrictHostKeyChecking=no" -i /user/.ssh/id_docker apt-get purge -y '^aspnetcore-.*' '^dotnet-.*' '^llvm-.*' 'php.*' '^mongodb-.*' '^mysql-.*' azure-cli google-chrome-stable firefox powershell mono-devel libgl1-mesa-dri google-cloud-sdk google-cloud-cli --autoremove --purge --fix-missing
+ssh root@$DOCKER_HOST -o "StrictHostKeyChecking=no" -i /user/.ssh/id_docker rm -rf "$AGENT_TOOLSDIRECTORY"
+ssh root@$DOCKER_HOST -o "StrictHostKeyChecking=no" -i /user/.ssh/id_docker apt-get purge -y '^aspnetcore-.*' '^dotnet-.*' '^llvm-.*' 'php.*' '^mongodb-.*' '^mysql-.*' '^ghc-.*' azure-cli google-chrome-stable firefox powershell hhvm mono-devel libgl1-mesa-dri google-cloud-sdk google-cloud-cli --autoremove --purge --fix-missing
 ssh root@$DOCKER_HOST -o "StrictHostKeyChecking=no" -i /user/.ssh/id_docker apt-get clean
 ssh root@$DOCKER_HOST -o "StrictHostKeyChecking=no" -i /user/.ssh/id_docker docker image prune --all --force
 exit 0
