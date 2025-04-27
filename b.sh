@@ -75,7 +75,8 @@ cp ../config_serm .config || exit 1
 elif [ "$1" = "server_small_a" ]; then
 export KCFLAGS="$KCFLAGS -mtune=znver3"
 cp ../config_ser2 .config || exit 1
-sed -i 's/-x64v2-sm/-x64v2a-sm/' .config
+sed -i 's/-ivy-sm/-ze2-sm/' .config || exit 1
+sed -i 's/MIVYBRIDGE/MZEN2/' .config
 elif [ "$1" = "server_small_2" ]; then
 export KCFLAGS="$KCFLAGS -mtune=ivybridge"
 cp ../config_ser2 .config || exit 1
