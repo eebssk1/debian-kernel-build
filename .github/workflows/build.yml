@@ -45,5 +45,5 @@ jobs:
           allowUpdates: true
           artifacts: "*.deb"
           commit: 6
-          makeLatest: false
+          makeLatest: ${{ matrix.compiler == 'gcc' }} 
           tag: ${{ env.VER }}-${{ matrix.compiler }}
