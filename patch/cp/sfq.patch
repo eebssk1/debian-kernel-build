@@ -15,12 +15,13 @@
  
  /* This type should contain at least SFQ_MAX_DEPTH + 1 + SFQ_MAX_FLOWS values */
  typedef u16 sfq_index;
-@@ -788,8 +788,9 @@
+@@ -788,8 +788,10 @@
  	q->divisor = SFQ_DEFAULT_HASH_DIVISOR;
  	q->maxflows = SFQ_DEFAULT_FLOWS;
  	q->quantum = psched_mtu(qdisc_dev(sch));
 -	q->perturb_period = 0;
 +	q->perturb_period = 95 * HZ;
++	q->headdrop = 1;
  	get_random_bytes(&q->perturbation, sizeof(q->perturbation));
 +	mod_timer(&q->perturb_timer, jiffies + q->perturb_period);
  
