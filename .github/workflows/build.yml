@@ -39,6 +39,29 @@ jobs:
         with:
           name: debs_${{ matrix.target }}-${{ matrix.compiler }}
           path: "*.deb"
+      - name: commit compare
+        id: cc
+        continue-on-error: true
+        run: |
+          set +e
+          git config --global --add safe.directory "$GITHUB_WORKSPACE"
+          git fetch --prune --tags
+          PSHA=$(git rev-list -n 1 "${{ env.VER }}-${{ matrix.compiler }}")
+          if [ "$PSHA" = "" ]; then
+            exit 0
+          fi
+          if [ "$PSHA" != "$GITHUB_SHA" ]; then
+            echo "build on different commit, release tag may need purge"
+            echo NEEDDEL=1 >> $GITHUB_OUTPUT
+          fi
+          exit 0
+      - name: delete tag if exists
+        uses: ClementTsang/delete-tag-and-release@v0.4.0
+        if: steps.cc.outputs.NEEDDEL == '1'
+        continue-on-error: true
+        with:
+          delete_release: true
+          tag_name: ${{ env.VER }}-${{ matrix.compiler }}
       - name: release
         uses: ncipollo/release-action@v1.14.0
         with:
