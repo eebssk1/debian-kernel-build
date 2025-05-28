@@ -6,24 +6,36 @@
  
 -#define SFQ_MAX_DEPTH		127 /* max number of packets per flow */
 -#define SFQ_DEFAULT_FLOWS	128
-+#define SFQ_MAX_DEPTH		224 /* max number of packets per flow */
-+#define SFQ_DEFAULT_FLOWS	192
++#define SFQ_MAX_DEPTH		272 /* max number of packets per flow */
++#define SFQ_DEFAULT_FLOWS	216
  #define SFQ_MAX_FLOWS		(0x10000 - SFQ_MAX_DEPTH - 1) /* max number of flows */
  #define SFQ_EMPTY_SLOT		0xffff
 -#define SFQ_DEFAULT_HASH_DIVISOR 1024
-+#define SFQ_DEFAULT_HASH_DIVISOR 512
++#define SFQ_DEFAULT_HASH_DIVISOR 2048
  
  /* This type should contain at least SFQ_MAX_DEPTH + 1 + SFQ_MAX_FLOWS values */
  typedef u16 sfq_index;
-@@ -788,8 +788,10 @@
+@@ -109,10 +109,10 @@
+ 	int		limit;		/* limit of total number of packets in this qdisc */
+ 	unsigned int	divisor;	/* number of slots in hash table */
+ 	u8		headdrop;
+-	u8		maxdepth;	/* limit of packets per flow */
++	u16		maxdepth;	/* limit of packets per flow */
+ 
+ 	siphash_key_t 	perturbation;
+-	u8		cur_depth;	/* depth of longest slot */
++	u16		cur_depth;	/* depth of longest slot */
+ 	u8		flags;
+ 	struct tcf_proto __rcu *filter_list;
+ 	struct tcf_block *block;
+@@ -754,7 +754,9 @@
  	q->divisor = SFQ_DEFAULT_HASH_DIVISOR;
  	q->maxflows = SFQ_DEFAULT_FLOWS;
  	q->quantum = psched_mtu(qdisc_dev(sch));
 -	q->perturb_period = 0;
-+	q->perturb_period = 95 * HZ;
++	q->perturb_period = 100 * HZ;
 +	q->headdrop = 1;
- 	get_random_bytes(&q->perturbation, sizeof(q->perturbation));
 +	mod_timer(&q->perturb_timer, jiffies + q->perturb_period);
+ 	get_random_bytes(&q->perturbation, sizeof(q->perturbation));
  
  	if (opt) {
- 		int err = sfq_change(sch, opt, extack);
