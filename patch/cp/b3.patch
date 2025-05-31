@@ -5,19 +5,19 @@
  
  /* Window length of min_rtt filter (in sec): */
 -static const u32 bbr_min_rtt_win_sec = 10;
-+static const u32 bbr_min_rtt_win_sec = 18;
++static const u32 bbr_min_rtt_win_sec = 17;
  /* Minimum time (in ms) spent at bbr_cwnd_min_target in BBR_PROBE_RTT mode: */
 -static const u32 bbr_probe_rtt_mode_ms = 200;
-+static const u32 bbr_probe_rtt_mode_ms = 170;
++static const u32 bbr_probe_rtt_mode_ms = 165;
  /* Window length of probe_rtt_min_us filter (in ms), and consequently the
   * typical interval between PROBE_RTT mode entries. The default is 5000ms.
   * Note that bbr_probe_rtt_win_ms must be <= bbr_min_rtt_win_sec * MSEC_PER_SEC
   */
 -static const u32 bbr_probe_rtt_win_ms = 5000;
-+static const u32 bbr_probe_rtt_win_ms = 9000;
++static const u32 bbr_probe_rtt_win_ms = 8500;
  /* Proportion of cwnd to estimated BDP in PROBE_RTT, in units of BBR_UNIT: */
 -static const u32 bbr_probe_rtt_cwnd_gain = BBR_UNIT * 1 / 2;
-+static const u32 bbr_probe_rtt_cwnd_gain = BBR_UNIT * 46 / 50;
++static const u32 bbr_probe_rtt_cwnd_gain = BBR_UNIT * 47 / 50;
  
  /* Use min_rtt to help adapt TSO burst size, with smaller min_rtt resulting
   * in bigger TSO bursts. We cut the RTT-based allowance in half
@@ -25,7 +25,7 @@
   * is below 1500 bytes after 6 * ~500 usec = 3ms.
   */
 -static const u32 bbr_tso_rtt_shift = 9;
-+static const u32 bbr_tso_rtt_shift = 11;
++static const u32 bbr_tso_rtt_shift = 10;
  
  /* Pace at ~1% below estimated bw, on average, to reduce queue at bottleneck.
   * In order to help drive the network toward lower queues and low latency while
@@ -34,7 +34,7 @@
   * Reno or CUBIC flow would:
   */
 -static const int bbr_startup_pacing_gain = BBR_UNIT * 277 / 100 + 1;
-+static const int bbr_startup_pacing_gain = BBR_UNIT * 304 / 100 + 1;
++static const int bbr_startup_pacing_gain = BBR_UNIT * 305 / 100 + 1;
  /* The gain for deriving startup cwnd: */
 -static const int bbr_startup_cwnd_gain = BBR_UNIT * 2;
 +static const int bbr_startup_cwnd_gain = BBR_UNIT * 17 / 5;
@@ -42,7 +42,7 @@
   * the queue created in BBR_STARTUP in a single round:
   */
 -static const int bbr_drain_gain = BBR_UNIT * 1000 / 2885;
-+static const int bbr_drain_gain = BBR_UNIT * 1000 / 2408;
++static const int bbr_drain_gain = BBR_UNIT * 1000 / 2406;
  /* The gain for deriving steady-state cwnd tolerates delayed/stretched ACKs: */
 -static const int bbr_cwnd_gain  = BBR_UNIT * 2;
 +static const int bbr_cwnd_gain  = BBR_UNIT * 21 / 5;
@@ -52,10 +52,10 @@
 -	BBR_UNIT * 91 / 100,	/* DOWN: drain queue and/or yield bw */
 -	BBR_UNIT,		/* CRUISE: try to use pipe w/ some headroom */
 -	BBR_UNIT,		/* REFILL: refill pipe to estimated 100% */
-+	BBR_UNIT * 33 / 10,	/* UP: probe for more available bw */
-+	BBR_UNIT * 89 / 100,	/* DOWN: drain queue and/or yield bw */
-+	BBR_UNIT * 7 / 5,		/* CRUISE: try to use pipe w/ some headroom */
-+	BBR_UNIT * 77 / 50,		/* REFILL: refill pipe to estimated 100% */
++	BBR_UNIT * 16 / 5,	/* UP: probe for more available bw */
++	BBR_UNIT * 22 / 25,	/* DOWN: drain queue and/or yield bw */
++	BBR_UNIT * 3 / 2,		/* CRUISE: try to use pipe w/ some headroom */
++	BBR_UNIT * 9 / 5,		/* REFILL: refill pipe to estimated 100% */
  };
  enum bbr_pacing_gain_phase {
  	BBR_BW_PROBE_UP		= 0,  /* push up inflight to probe for bw/vol */
@@ -98,7 +98,7 @@
   * No loss response when 0.
   */
 -static const u32 bbr_beta = BBR_UNIT * 30 / 100;
-+static const u32 bbr_beta = BBR_UNIT * 1 / 150;
++static const u32 bbr_beta = BBR_UNIT * 1 / 120;
  
  /* Gain factor for ECN mark ratio samples, scaled by BBR_SCALE (1/16 = 6.25%) */
 -static const u32 bbr_ecn_alpha_gain = BBR_UNIT * 1 / 16;
@@ -129,7 +129,7 @@
  
  /* Estimate bw probing has gone too far if loss rate exceeds this level. */
 -static const u32 bbr_loss_thresh = BBR_UNIT * 2 / 100;  /* 2% loss */
-+static const u32 bbr_loss_thresh = BBR_UNIT * 21 / 100;  /* 21% loss */
++static const u32 bbr_loss_thresh = BBR_UNIT * 22 / 100;  /* 22% loss */
  
  /* Slow down for a packet loss recovered by TLP? */
  static const bool bbr_loss_probe_recovery = true;
@@ -138,7 +138,7 @@
   * Disabled if 0.
   */
 -static const u32 bbr_full_loss_cnt = 6;
-+static const u32 bbr_full_loss_cnt = 20;
++static const u32 bbr_full_loss_cnt = 21;
  
  /* Exit STARTUP if number of round trips with ECN mark rate above ecn_thresh
   * meets this count.
@@ -148,7 +148,7 @@
  
  /* Fraction of unutilized headroom to try to leave in path upon high loss. */
 -static const u32 bbr_inflight_headroom = BBR_UNIT * 15 / 100;
-+static const u32 bbr_inflight_headroom = BBR_UNIT * 1 / 125;
++static const u32 bbr_inflight_headroom = BBR_UNIT * 1 / 110;
  
  /* How much do we increase cwnd_gain when probing for bandwidth in
   * BBR_BW_PROBE_UP? This specifies the increment in units of
@@ -165,12 +165,12 @@
   *  BDP = 25Mbps * .030sec /(1514bytes) = 61.9 packets
   */
 -static const u32 bbr_bw_probe_max_rounds = 63;
-+static const u32 bbr_bw_probe_max_rounds = 21;
++static const u32 bbr_bw_probe_max_rounds = 22;
  
  /* Max amount of randomness to inject in round counting for Reno-coexistence.
   */
 -static const u32 bbr_bw_probe_rand_rounds = 2;
-+static const u32 bbr_bw_probe_rand_rounds = 4;
++static const u32 bbr_bw_probe_rand_rounds = 3;
  
  /* Use BBR-native probe time scale starting at this many usec.
   * We aim to be fair with Reno/CUBIC up to an inter-loss time epoch of at least:
@@ -211,18 +211,18 @@
  	 */
  	bdp = (((w * gain) >> BBR_SCALE) + BW_UNIT - 1) / BW_UNIT;
  
-+	if(bbr->min_rtt_us >= 40 * USEC_PER_MSEC) {
-+			bdp += 2;
-+			bdp += bw >= 384000 ? 2 : 0;
-+	} else if(bbr->min_rtt_us >= 100 * USEC_PER_MSEC) {
++	if(bbr->min_rtt_us >= 38 * USEC_PER_MSEC) {
 +			bdp += 3;
-+			bdp += bw >= 384000 ? 3 : 1;
-+	} else if(bbr->min_rtt_us >= 160 * USEC_PER_MSEC) {
++			bdp += bw >= 288000 ? 2 : 1;
++	} else if(bbr->min_rtt_us >= 90 * USEC_PER_MSEC) {
 +			bdp += 4;
-+			bdp += bw >= 384000 ? 4 : 2;
-+	} else if(bbr->min_rtt_us >= 200 * USEC_PER_MSEC) {
-+			bdp += 6;
-+			bdp += bw >= 384000 ? 6 : 3;
++			bdp += bw >= 288000 ? 3 : 2;
++	} else if(bbr->min_rtt_us >= 140 * USEC_PER_MSEC) {
++			bdp += 5;
++			bdp += bw >= 288000 ? 4 : 3;
++	} else if(bbr->min_rtt_us >= 180 * USEC_PER_MSEC) {
++			bdp += 7;
++			bdp += bw >= 288000 ? 7 : 4;
 +	}
 +
  	return bdp;

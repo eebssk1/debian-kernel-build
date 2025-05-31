@@ -6,8 +6,8 @@
  
 -#define SFQ_MAX_DEPTH		127 /* max number of packets per flow */
 -#define SFQ_DEFAULT_FLOWS	128
-+#define SFQ_MAX_DEPTH		272 /* max number of packets per flow */
-+#define SFQ_DEFAULT_FLOWS	216
++#define SFQ_MAX_DEPTH		265 /* max number of packets per flow */
++#define SFQ_DEFAULT_FLOWS	208
  #define SFQ_MAX_FLOWS		(0x10000 - SFQ_MAX_DEPTH - 1) /* max number of flows */
  #define SFQ_EMPTY_SLOT		0xffff
 -#define SFQ_DEFAULT_HASH_DIVISOR 1024
