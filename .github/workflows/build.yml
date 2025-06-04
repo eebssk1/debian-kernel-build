@@ -15,7 +15,7 @@ jobs:
     strategy:
       matrix:
         compiler: [llvm, gcc]
-        target: [desktop, server_large, server_small, server_small_2, server_small_a]
+        target: [desktop, server_large, server_small, server_small_2, server_small_a, server_small_g ]
         exclude:
           - target: server_small_a
             compiler: llvm

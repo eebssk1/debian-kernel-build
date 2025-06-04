@@ -76,10 +76,15 @@ elif [ "$1" = "server_small_a" ]; then
 export KCFLAGS="$KCFLAGS -mtune=znver3"
 cp ../config_ser2 .config || exit 1
 sed -i 's/-ivy-sm/-ze2-sm/' .config || exit 1
-sed -i 's/MIVYBRIDGE/MZEN2/' .config
+sed -i 's/MIVYBRIDGE/MZEN2/' .config || exit 1
 elif [ "$1" = "server_small_2" ]; then
+export KCFLAGS="$KCFLAGS -mtune=haswell"
+cp ../config_ser2 .config || exit 1
+elif [ "$1" = "server_small_g" ]; then
 export KCFLAGS="$KCFLAGS -mtune=ivybridge"
 cp ../config_ser2 .config || exit 1
+sed -i 's/-ivy-sm/-gen-sm/' .config || exit 1
+sed -i 's/MIVYBRIDGE/MWESTMERE/' .config || exit 1
 else
 echo "No such target!"
 exit 1
