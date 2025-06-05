@@ -19,6 +19,9 @@ if [ x$2 = xgcc ]; then
 curl -L https://github.com/eebssk1/aio_tc_build/releases/latest/download/x86_64-linux-gnu-native.tb2 | tar --bz -xf -
 mv x86_64-linux-gnu /opt/newcc
 chown -R root:root /opt/newcc
+curl -L https://github.com/eebssk1/aio_tc_build/releases/latest/download/x86_64-linux-gnu-native_l.tb2 | tar --bz -xf -
+mv x86_64-linux-gnu_l /opt/newcc_l
+chown -R root:root /opt/newcc_l
 else
 curl -L https://github.com/eebssk1/aio_tc_build/releases/download/20240425_llvm/llvm_18.1.4.tgz | tar -zxf -
 mv llvm_18.1.4 /opt/newclang
@@ -73,14 +76,17 @@ elif [ "$1" = "server_small" ]; then
 export KCFLAGS="$KCFLAGS -mtune=broadwell"
 cp ../config_serm .config || exit 1
 elif [ "$1" = "server_small_a" ]; then
+export PATH=/opt/newcc_l/bin:$PATH
 export KCFLAGS="$KCFLAGS -mtune=znver3"
 cp ../config_ser2 .config || exit 1
 sed -i 's/-ivy-sm/-ze2-sm/' .config || exit 1
 sed -i 's/MIVYBRIDGE/MZEN2/' .config || exit 1
 elif [ "$1" = "server_small_2" ]; then
+export PATH=/opt/newcc_l/bin:$PATH
 export KCFLAGS="$KCFLAGS -mtune=haswell"
 cp ../config_ser2 .config || exit 1
 elif [ "$1" = "server_small_g" ]; then
+export PATH=/opt/newcc_l/bin:$PATH
 export KCFLAGS="$KCFLAGS -mtune=ivybridge"
 cp ../config_ser2 .config || exit 1
 sed -i 's/-ivy-sm/-gen-sm/' .config || exit 1
