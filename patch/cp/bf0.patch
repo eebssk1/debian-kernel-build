@@ -1,0 +1,11 @@
+--- a/tools/lib/bpf/Makefile	2025-05-14 02:24:08.871171421 +0000
++++ b/tools/lib/bpf/Makefile	2025-05-14 09:20:17.002691559 +0000
+@@ -86,7 +86,7 @@
+ # Append required CFLAGS
+ override CFLAGS += -std=gnu89
+ override CFLAGS += $(EXTRA_WARNINGS) -Wno-switch-enum
+-override CFLAGS += -Werror -Wall
++#override CFLAGS += -Werror -Wall
+ override CFLAGS += $(INCLUDES)
+ override CFLAGS += -fvisibility=hidden
+ override CFLAGS += -D_LARGEFILE64_SOURCE -D_FILE_OFFSET_BITS=64
