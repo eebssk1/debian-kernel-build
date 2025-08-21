@@ -23,7 +23,7 @@ index e6f211dcf82e..0ea48434ac7d 100644
  	 * and zone lock contention.
  	 */
 -	batch = min(zone_managed_pages(zone) >> 10, SZ_1M / PAGE_SIZE);
-+	batch = min(zone_managed_pages(zone) >> 10, 2 * SZ_1M / PAGE_SIZE);
++	batch = min(zone_managed_pages(zone) >> 10, ((totalram_pages() * PAGE_SIZE / 1024) >= 2042 ? 4 : 2) * SZ_1M / PAGE_SIZE);
  	batch /= 4;		/* We effectively *= 4 below */
  	if (batch < 1)
  		batch = 1;
