@@ -9,7 +9,7 @@ apt-get update
 apt-get upgrade -y
 apt-get install -y libelf-dev libssl-dev dwarves bc kmod cpio python3 zstd debhelper pahole|| exit 1
 
-FILE=$(cat version)-xanmod2.tar.bz2
+FILE=$(cat version)-xanmod$(cat build).tar.bz2
 
 wget https://gitlab.com/xanmod/linux/-/archive/$FILE
 tar --bzip2 -xf $FILE || exit 1
