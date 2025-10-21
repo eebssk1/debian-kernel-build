@@ -11,9 +11,21 @@ apt-get install -y libelf-dev libssl-dev dwarves bc kmod cpio python3 zstd debhe
 
 FILE=$(cat version)-xanmod$(cat build).tar.bz2
 
+DLOK=false
+COUNT=0
+while [ "$DLOK" != "true" ]; do
+if [ "$COUNT" = "6" ]; then
+echo "too many error !"
+exit 1
+fi
+COUNT=$((COUNT+1))
 wget https://gitlab.com/xanmod/linux/-/archive/$FILE
-tar --bzip2 -xf $FILE || exit 1
-rm $FILE
+tar --bzip2 -xf $FILE
+if [ "$?" = "0" ]; then
+DLOK=true
+fi
+rm -f $FILE
+done
 
 if [ x$2 = xgcc ]; then
 curl -L https://github.com/eebssk1/aio_tc_build/releases/latest/download/x86_64-linux-gnu-native.tb2 | tar --bz -xf -
