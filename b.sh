@@ -14,7 +14,8 @@ FILE=$(cat version)-xanmod$(cat build).tar.bz2
 DLOK=false
 COUNT=0
 while [ "$DLOK" != "true" ]; do
-if [ "$COUNT" = "6" ]; then
+sleep 2
+if [ "$COUNT" = "21" ]; then
 echo "too many error !"
 exit 1
 fi
