@@ -65,8 +65,8 @@
 +
 +static inline void setsched(unsigned int cpu) {
 +	struct task_struct *tsk = per_cpu(ksoftirqd, cpu);
-+	struct sched_param sp = { .sched_priority = 0 };
-+   sched_setscheduler_nocheck(tsk, SCHED_NORMAL, &sp);
++	/*struct sched_param sp = { .sched_priority = 0 };*/
++   /*sched_setscheduler_nocheck(tsk, SCHED_NORMAL, &sp);*/
 +	set_user_nice(tsk, -2);
 +}
 +
