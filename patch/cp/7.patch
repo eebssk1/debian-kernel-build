@@ -5,16 +5,19 @@
  	unsigned long flags, new_flags;
  	enum owner_state state;
 -	int i = 0;
-+	u16 i = 0;
++	u8 i = 0;
  
  	lockdep_assert_preemption_disabled();
  
-@@ -784,7 +784,7 @@
+@@ -783,8 +783,10 @@
+ 			state = OWNER_NONSPINNABLE;
  			break;
  		}
  
 -		if (i++ > 1000)
-+		if (i++ > 92)
++		if (++i == 4) {
++			i = 0;
  			cpu_relax();
++		}
  	}
  
