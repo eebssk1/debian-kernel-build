@@ -5,7 +5,7 @@
  		.flags = MWAIT2flg(0x01) | CPUIDLE_FLAG_ALWAYS_ENABLE,
  		.exit_latency = 10,
 -		.target_residency = 20,
-+		.target_residency = 11,
++		.target_residency = 13,
  		.enter = &intel_idle,
  		.enter_s2idle = intel_idle_s2idle, },
  	{
@@ -14,7 +14,7 @@
  		.flags = MWAIT2flg(0x10) | CPUIDLE_FLAG_TLB_FLUSHED,
  		.exit_latency = 40,
 -		.target_residency = 100,
-+		.target_residency = 60,
++		.target_residency = 61,
  		.enter = &intel_idle,
  		.enter_s2idle = intel_idle_s2idle, },
  	{
@@ -23,7 +23,7 @@
  		.flags = MWAIT2flg(0x20) | CPUIDLE_FLAG_TLB_FLUSHED,
  		.exit_latency = 133,
 -		.target_residency = 400,
-+		.target_residency = 305,
++		.target_residency = 302,
  		.enter = &intel_idle,
  		.enter_s2idle = intel_idle_s2idle, },
  	{
