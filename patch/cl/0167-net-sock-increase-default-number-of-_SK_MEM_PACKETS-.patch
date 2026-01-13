@@ -19,7 +19,7 @@ index 54ca8dcbfb43..9adc51e8085b 100644
   * not depend upon such differences.
   */
 -#define _SK_MEM_PACKETS		256
-+#define _SK_MEM_PACKETS		392
++#define _SK_MEM_PACKETS		372
  #define _SK_MEM_OVERHEAD	SKB_TRUESIZE(256)
  #define SK_WMEM_MAX		(_SK_MEM_OVERHEAD * _SK_MEM_PACKETS)
  #define SK_RMEM_MAX		(_SK_MEM_OVERHEAD * _SK_MEM_PACKETS)

@@ -17,7 +17,7 @@ index 2048138ce54b..903ead0afacb 100644
  static unsigned int get_update_sysctl_factor(void)
  {
 -	unsigned int cpus = min_t(unsigned int, num_online_cpus(), 8);
-+	unsigned int cpus = num_online_cpus();
++	unsigned int cpus = min_t(unsigned int, num_online_cpus(), 20);
  	unsigned int factor;
  
  	switch (sysctl_sched_tunable_scaling) {
