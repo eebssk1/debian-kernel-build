@@ -13,19 +13,25 @@ diff --git a/mm/page_alloc.c b/mm/page_alloc.c
 index e6f211dcf82e..0ea48434ac7d 100644
 --- a/mm/page_alloc.c
 +++ b/mm/page_alloc.c
-@@ -6836,11 +6836,11 @@ static int zone_batchsize(struct zone *zone)
+@@ -5599,6 +5599,7 @@
+ {
+ #ifdef CONFIG_MMU
+ 	int batch;
++	int mem = (totalram_pages() * PAGE_SIZE) >> 20;
  
  	/*
  	 * The number of pages to batch allocate is either ~0.1%
--	 * of the zone or 1MB, whichever is smaller. The batch
-+	 * of the zone or 4MB, whichever is smaller. The batch
+@@ -5606,7 +5607,12 @@
  	 * size is striking a balance between allocation latency
  	 * and zone lock contention.
  	 */
 -	batch = min(zone_managed_pages(zone) >> 10, SZ_1M / PAGE_SIZE);
-+	batch = min(zone_managed_pages(zone) >> 10, ((totalram_pages() * PAGE_SIZE / 1024) >= 2042 ? 4 : 2) * SZ_1M / PAGE_SIZE);
++	batch = SZ_1M / PAGE_SIZE;
++	if (mem >= 2032)
++		batch = 4 * SZ_1M / PAGE_SIZE;
++	else if (mem >= 520)
++		batch = 2 * SZ_1M / PAGE_SIZE;
++	batch = min(zone_managed_pages(zone) >> 10, batch);
  	batch /= 4;		/* We effectively *= 4 below */
  	if (batch < 1)
  		batch = 1;
--- 
-https://clearlinux.org
