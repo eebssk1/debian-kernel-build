@@ -1,6 +1,17 @@
 --- linux-6.1/include/net/tcp.h 	2022-12-11 22:15:18.000000000 +0000
 +++ linux-6.1/include/net/tcp.h 	2022-12-30 18:55:14.908021264 +0000
-@@ -80,7 +80,7 @@
+@@ -75,16 +75,16 @@
+ #define TCP_BASE_MSS		1024
+ 
+ /* probing interval, default to 10 minutes as per RFC4821 */
+-#define TCP_PROBE_INTERVAL	600
++#define TCP_PROBE_INTERVAL	720
+ 
+ /* Specify interval when tcp mtu probing will stop */
+-#define TCP_PROBE_THRESHOLD	8
++#define TCP_PROBE_THRESHOLD	6
+ 
+ /* After receiving this amount of duplicate ACKs fast retransmit starts. */
  #define TCP_FASTRETRANS_THRESH 3
  
  /* Maximal number of ACKs sent quickly to accelerate slow-start. */
@@ -9,7 +20,7 @@
  
  /* Maximal number of window scale according to RFC1323 */
  #define TCP_MAX_WSCALE		14U
-@@ -120,7 +120,7 @@
+@@ -124,7 +124,7 @@
  				 * initial RTO.
  				 */
  
@@ -18,7 +29,7 @@
  				  * state, about 60 seconds	*/
  #define TCP_FIN_TIMEOUT	TCP_TIMEWAIT_LEN
                                   /* BSD style FIN_WAIT2 deadlock breaker.
-@@ -130,24 +130,24 @@
+@@ -134,24 +134,24 @@
  				  */
  #define TCP_FIN_TIMEOUT_MAX (120 * HZ) /* max TCP_LINGER2 value (two minutes) */
  
@@ -50,3 +61,12 @@
  						 * used as a fallback RTO for the
  						 * initial data transmission if no
  						 * valid RTT sample has been acquired,
+@@ -241,7 +241,7 @@
+ #define TCP_THIN_LINEAR_RETRIES 6       /* After 6 linear retries, do exp. backoff */
+ 
+ /* TCP initial congestion window as per rfc6928 */
+-#define TCP_INIT_CWND		10
++#define TCP_INIT_CWND		12
+ 
+ /* Bit Flags for sysctl_tcp_fastopen */
+ #define	TFO_CLIENT_ENABLE	1
