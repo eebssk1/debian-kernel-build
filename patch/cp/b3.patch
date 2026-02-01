@@ -8,7 +8,7 @@
 +static const u32 bbr_min_rtt_win_sec = 12;
  /* Minimum time (in ms) spent at bbr_cwnd_min_target in BBR_PROBE_RTT mode: */
 -static const u32 bbr_probe_rtt_mode_ms = 200;
-+static const u32 bbr_probe_rtt_mode_ms = 130;
++static const u32 bbr_probe_rtt_mode_ms = 120;
  /* Window length of probe_rtt_min_us filter (in ms), and consequently the
   * typical interval between PROBE_RTT mode entries. The default is 5000ms.
   * Note that bbr_probe_rtt_win_ms must be <= bbr_min_rtt_win_sec * MSEC_PER_SEC
@@ -17,7 +17,7 @@
 +static const u32 bbr_probe_rtt_win_ms = 4000;
  /* Proportion of cwnd to estimated BDP in PROBE_RTT, in units of BBR_UNIT: */
 -static const u32 bbr_probe_rtt_cwnd_gain = BBR_UNIT * 1 / 2;
-+static const u32 bbr_probe_rtt_cwnd_gain = BBR_UNIT * 24 / 25;
++static const u32 bbr_probe_rtt_cwnd_gain = BBR_UNIT * 4 / 5;
  
  /* Use min_rtt to help adapt TSO burst size, with smaller min_rtt resulting
   * in bigger TSO bursts. We cut the RTT-based allowance in half
@@ -34,18 +34,18 @@
   * Reno or CUBIC flow would:
   */
 -static const int bbr_startup_pacing_gain = BBR_UNIT * 277 / 100 + 1;
-+static const int bbr_startup_pacing_gain = BBR_UNIT * 307 / 100 + 1;
++static const int bbr_startup_pacing_gain = BBR_UNIT * 312 / 100 + 1;
  /* The gain for deriving startup cwnd: */
 -static const int bbr_startup_cwnd_gain = BBR_UNIT * 2;
-+static const int bbr_startup_cwnd_gain = BBR_UNIT * 18 / 5;
++static const int bbr_startup_cwnd_gain = BBR_UNIT * 14 / 5;
  /* The pacing gain in BBR_DRAIN is calculated to typically drain
   * the queue created in BBR_STARTUP in a single round:
   */
 -static const int bbr_drain_gain = BBR_UNIT * 1000 / 2885;
-+static const int bbr_drain_gain = BBR_UNIT * 1000 / 2402;
++static const int bbr_drain_gain = BBR_UNIT * 1000 / 2404;
  /* The gain for deriving steady-state cwnd tolerates delayed/stretched ACKs: */
 -static const int bbr_cwnd_gain  = BBR_UNIT * 2;
-+static const int bbr_cwnd_gain  = BBR_UNIT * 22 / 5;
++static const int bbr_cwnd_gain  = BBR_UNIT * 4;
  /* The pacing_gain values for the PROBE_BW gain cycle, to discover/share bw: */
  static const int bbr_pacing_gain[] = {
 -	BBR_UNIT * 5 / 4,	/* UP: probe for more available bw */
@@ -53,9 +53,9 @@
 -	BBR_UNIT,		/* CRUISE: try to use pipe w/ some headroom */
 -	BBR_UNIT,		/* REFILL: refill pipe to estimated 100% */
 +	BBR_UNIT * 17 / 5,	/* UP: probe for more available bw */
-+	BBR_UNIT * 43 / 50,	/* DOWN: drain queue and/or yield bw */
-+	BBR_UNIT * 8 / 5,		/* CRUISE: try to use pipe w/ some headroom */
-+	BBR_UNIT * 48 / 25,		/* REFILL: refill pipe to estimated 100% */
++	BBR_UNIT * 22 / 25,	/* DOWN: drain queue and/or yield bw */
++	BBR_UNIT * 7 / 5,		/* CRUISE: try to use pipe w/ some headroom */
++	BBR_UNIT * 9 / 5,		/* REFILL: refill pipe to estimated 100% */
  };
  enum bbr_pacing_gain_phase {
  	BBR_BW_PROBE_UP		= 0,  /* push up inflight to probe for bw/vol */
@@ -76,14 +76,14 @@
  
  /* Gain factor for adding extra_acked to target cwnd: */
 -static const int bbr_extra_acked_gain = BBR_UNIT;
-+static const int bbr_extra_acked_gain = BBR_UNIT * 24 / 20;
++static const int bbr_extra_acked_gain = BBR_UNIT * 22 / 20;
  /* Window length of extra_acked window. */
  static const u32 bbr_extra_acked_win_rtts = 5;
  /* Max allowed val for ack_epoch_acked, after which sampling epoch is reset */
  static const u32 bbr_ack_epoch_acked_reset_thresh = 1U << 20;
  /* Time period for clamping cwnd increment due to ack aggregation */
 -static const u32 bbr_extra_acked_max_us = 100 * 1000;
-+static const u32 bbr_extra_acked_max_us = 172 * 1000;
++static const u32 bbr_extra_acked_max_us = 196 * 1000;
  
  /* Flags to control BBR ECN-related behavior... */
  
@@ -98,11 +98,11 @@
   * No loss response when 0.
   */
 -static const u32 bbr_beta = BBR_UNIT * 30 / 100;
-+static const u32 bbr_beta = BBR_UNIT * 1 / 110;
++static const u32 bbr_beta = BBR_UNIT * 1 / 105;
  
  /* Gain factor for ECN mark ratio samples, scaled by BBR_SCALE (1/16 = 6.25%) */
 -static const u32 bbr_ecn_alpha_gain = BBR_UNIT * 1 / 16;
-+static const u32 bbr_ecn_alpha_gain = BBR_UNIT * 1 / 12;
++static const u32 bbr_ecn_alpha_gain = BBR_UNIT * 1 / 14;
  
  /* The initial value for ecn_alpha; 1.0 allows a flow to respond quickly
   * to congestion if the bottleneck is congested when the flow starts up.
@@ -138,7 +138,7 @@
   * Disabled if 0.
   */
 -static const u32 bbr_full_loss_cnt = 6;
-+static const u32 bbr_full_loss_cnt = 19;
++static const u32 bbr_full_loss_cnt = 18;
  
  /* Exit STARTUP if number of round trips with ECN mark rate above ecn_thresh
   * meets this count.
@@ -148,7 +148,7 @@
  
  /* Fraction of unutilized headroom to try to leave in path upon high loss. */
 -static const u32 bbr_inflight_headroom = BBR_UNIT * 15 / 100;
-+static const u32 bbr_inflight_headroom = BBR_UNIT * 1 / 105;
++static const u32 bbr_inflight_headroom = BBR_UNIT * 1 / 102;
  
  /* How much do we increase cwnd_gain when probing for bandwidth in
   * BBR_BW_PROBE_UP? This specifies the increment in units of
@@ -156,7 +156,7 @@
   * The min value is 0 (meaning 0.0); max is 3 (meaning 0.75).
   */
 -static const u32 bbr_bw_probe_cwnd_gain = 1;
-+static const u32 bbr_bw_probe_cwnd_gain = 3;
++static const u32 bbr_bw_probe_cwnd_gain = 2;
  
  /* Max number of packet-timed rounds to wait before probing for bandwidth.  If
   * we want to tolerate 1% random loss per round, and not have this cut our
