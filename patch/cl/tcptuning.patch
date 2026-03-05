@@ -75,7 +75,7 @@
  static inline u32 __tcp_set_rto(const struct tcp_sock *tp)
  {
 -	return usecs_to_jiffies((tp->srtt_us >> 3) + tp->rttvar_us);
-+	return usecs_to_jiffies(((tp->srtt_us >> 3) + tp->rttvar_us) * 22 / 25);
++	return max(usecs_to_jiffies(((tp->srtt_us >> 3) + tp->rttvar_us) * 22 / 25), READ_ONCE(tp->inet_conn.icsk_rto_min));
  }
  
  static inline void __tcp_fast_path_on(struct tcp_sock *tp, u32 snd_wnd)
