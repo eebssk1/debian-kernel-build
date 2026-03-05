@@ -29,10 +29,10 @@
  #include <linux/miscdevice.h>
  #include <linux/module.h>
  #include <linux/random.h>
+ #include <linux/rcupdate.h>
 +#include <uapi/linux/sched/types.h>
  #include <linux/sched.h>
  #include <linux/sched/signal.h>
- #include <linux/slab.h>
 @@ -105,6 +105,11 @@
  			pr_err("hwrng_fill thread creation failed\n");
  			hwrng_fill = NULL;
