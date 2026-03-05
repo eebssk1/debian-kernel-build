@@ -9,7 +9,7 @@ apt-get update
 apt-get upgrade -y
 apt-get install -y libelf-dev libssl-dev dwarves bc kmod cpio python3 zstd debhelper pahole|| exit 1
 
-FILE=$(cat version)-xanmod$(cat build).tar.bz2
+FILE=6.12.74-xanmod$(cat build).tar.bz2
 
 DLOK=false
 COUNT=0
@@ -43,7 +43,17 @@ fi
 
 echo VER=$(cat version) >> $GITHUB_ENV
 
+for a in $(cat update); do
+wget https://cdn.kernel.org/pub/linux/kernel/v6.x/incr/patch-$a.xz
+xz -d patch-$a.xz
+done
+
 cd linux-* || exit 1
+
+for a in $(cat ../update); do
+echo apply update $a
+patch -f -p1 -i ../patch-$a || exit 128
+done
 
 for a in ../patch/rev/*.patch; do
 [ -f "$a" ] || continue
