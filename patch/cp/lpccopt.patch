@@ -24,7 +24,7 @@ index a9ac5fa06d4a..8fa9150d6cf7 100644
 +    if (dst && dst_metric(dst, RTAX_CC_ALGO))
 +        return;
 +
-+    if (likely(READ_ONCE(tp->bytes_acked) > 0x500000))
++    if (likely(READ_ONCE(tp->bytes_acked) > 0x200000))
 +        return;
 +
 +    if (unlikely(min_rtt <= 750)) {
