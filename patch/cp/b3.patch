@@ -1,6 +1,6 @@
 --- a/net/ipv4/tcp_bbr.c       2025-08-28 17:37:45.780881965 +0000
 +++ b/net/ipv4/tcp_bbr.c       2025-08-28 17:37:26.387883265 +0000
-@@ -181,23 +181,23 @@
+@@ -181,16 +181,16 @@
  };
  
  /* Window length of min_rtt filter (in sec): */
@@ -21,31 +21,23 @@
  
  /* Use min_rtt to help adapt TSO burst size, with smaller min_rtt resulting
   * in bigger TSO bursts. We cut the RTT-based allowance in half
-  * for every 2^9 usec (aka 512 us) of RTT, so that the RTT-based allowance
-  * is below 1500 bytes after 6 * ~500 usec = 3ms.
-  */
--static const u32 bbr_tso_rtt_shift = 9;
-+static const u32 bbr_tso_rtt_shift = 9;
- 
- /* Pace at ~1% below estimated bw, on average, to reduce queue at bottleneck.
-  * In order to help drive the network toward lower queues and low latency while
 @@ -212,21 +212,21 @@
   * and send the same number of packets per RTT that an un-paced, slow-starting
   * Reno or CUBIC flow would:
   */
 -static const int bbr_startup_pacing_gain = BBR_UNIT * 277 / 100 + 1;
-+static const int bbr_startup_pacing_gain = BBR_UNIT * 308 / 100 + 1;
++static const int bbr_startup_pacing_gain = BBR_UNIT * 306 / 100 + 1;
  /* The gain for deriving startup cwnd: */
 -static const int bbr_startup_cwnd_gain = BBR_UNIT * 2;
-+static const int bbr_startup_cwnd_gain = BBR_UNIT * 14 / 5;
++static const int bbr_startup_cwnd_gain = BBR_UNIT * 3;
  /* The pacing gain in BBR_DRAIN is calculated to typically drain
   * the queue created in BBR_STARTUP in a single round:
   */
 -static const int bbr_drain_gain = BBR_UNIT * 1000 / 2885;
-+static const int bbr_drain_gain = BBR_UNIT * 1000 / 2406;
++static const int bbr_drain_gain = BBR_UNIT * 1000 / 2407;
  /* The gain for deriving steady-state cwnd tolerates delayed/stretched ACKs: */
 -static const int bbr_cwnd_gain  = BBR_UNIT * 2;
-+static const int bbr_cwnd_gain  = BBR_UNIT * 3;
++static const int bbr_cwnd_gain  = BBR_UNIT * 14 / 5;
  /* The pacing_gain values for the PROBE_BW gain cycle, to discover/share bw: */
  static const int bbr_pacing_gain[] = {
 -	BBR_UNIT * 5 / 4,	/* UP: probe for more available bw */
@@ -64,12 +56,12 @@
   * needs at least 4 packets in flight:
   */
 -static const u32 bbr_cwnd_min_target = 4;
-+static const u32 bbr_cwnd_min_target = 14;
++static const u32 bbr_cwnd_min_target = 12;
  
  /* To estimate if BBR_STARTUP or BBR_BW_PROBE_UP has filled pipe... */
  /* If bw has increased significantly (1.25x), there may be more bw available: */
 -static const u32 bbr_full_bw_thresh = BBR_UNIT * 5 / 4;
-+static const u32 bbr_full_bw_thresh = BBR_UNIT * 59 / 50;
++static const u32 bbr_full_bw_thresh = BBR_UNIT * 6 / 5;
  /* But after 3 rounds w/o significant bw growth, estimate pipe is full: */
 -static const u32 bbr_full_bw_cnt = 3;
 +static const u32 bbr_full_bw_cnt = 4;
@@ -98,7 +90,7 @@
   * No loss response when 0.
   */
 -static const u32 bbr_beta = BBR_UNIT * 30 / 100;
-+static const u32 bbr_beta = BBR_UNIT * 1 / 104;
++static const u32 bbr_beta = BBR_UNIT * 1 / 103;
  
  /* Gain factor for ECN mark ratio samples, scaled by BBR_SCALE (1/16 = 6.25%) */
 -static const u32 bbr_ecn_alpha_gain = BBR_UNIT * 1 / 16;
@@ -129,7 +121,7 @@
  
  /* Estimate bw probing has gone too far if loss rate exceeds this level. */
 -static const u32 bbr_loss_thresh = BBR_UNIT * 2 / 100;  /* 2% loss */
-+static const u32 bbr_loss_thresh = BBR_UNIT * 1 / 20;  /* 5% loss */
++static const u32 bbr_loss_thresh = BBR_UNIT * 1 / 25;  /* 4% loss */
  
  /* Slow down for a packet loss recovered by TLP? */
  static const bool bbr_loss_probe_recovery = true;
@@ -138,7 +130,7 @@
   * Disabled if 0.
   */
 -static const u32 bbr_full_loss_cnt = 6;
-+static const u32 bbr_full_loss_cnt = 8;
++static const u32 bbr_full_loss_cnt = 7;
  
  /* Exit STARTUP if number of round trips with ECN mark rate above ecn_thresh
   * meets this count.
@@ -185,12 +177,26 @@
  
  /* Use fast path if app-limited, no loss/ECN, and target cwnd was reached? */
  static const bool bbr_fast_path = true;
-@@ -468,8 +468,13 @@
+@@ -464,12 +464,26 @@
+ {
+ 	struct tcp_sock *tp = tcp_sk(sk);
+ 	struct bbr *bbr = inet_csk_ca(sk);
+-	unsigned long rate = bbr_bw_to_pacing_rate(sk, bw, gain);
++	bool force_update = false;
++	unsigned long rate;
++
++	if (unlikely(tp->app_limited && bbr->mode == BBR_STARTUP)) {
++		if (likely(gain > BBR_UNIT * 61 / 50))
++			gain = BBR_UNIT * 61 / 50;
++		force_update = true;
++	}
++	
++	rate = bbr_bw_to_pacing_rate(sk, bw, gain);
  
  	if (unlikely(!bbr->has_seen_rtt && tp->srtt_us))
  		bbr_init_pacing_rate_from_rtt(sk);
 -	if (bbr_full_bw_reached(sk) || rate > READ_ONCE(sk->sk_pacing_rate))
-+	if (bbr_full_bw_reached(sk) || rate > READ_ONCE(sk->sk_pacing_rate)) {
++	if (bbr_full_bw_reached(sk) || rate > READ_ONCE(sk->sk_pacing_rate) || force_update) {
 +		if (unlikely(bbr->min_rtt_us <= 750)) {
 +			gain = gain > BBR_UNIT ? min(gain, BBR_UNIT * 12 / 10) : gain;
 +			rate = bbr_bw_to_pacing_rate(sk, bw, gain);
@@ -200,7 +206,16 @@
  }
  
  /* Return the number of segments BBR would like in a TSO/GSO skb, given a
-@@ -590,6 +595,26 @@
+@@ -544,6 +558,8 @@
+ 		 */
+ 		if (bbr->mode == BBR_PROBE_BW)
+ 			bbr_set_pacing_rate(sk, bbr_bw(sk), BBR_UNIT);
++		else if (bbr->mode == BBR_STARTUP)
++			bbr_set_pacing_rate(sk, bbr_bw(sk), BBR_UNIT * 61 / 50);
+ 		else if (bbr->mode == BBR_PROBE_RTT)
+ 			bbr_check_probe_rtt_done(sk);
+ 	} else if ((event == CA_EVENT_ECN_IS_CE ||
+@@ -590,6 +606,26 @@
  	 */
  	bdp = (((w * gain) >> BBR_SCALE) + BW_UNIT - 1) / BW_UNIT;
  
@@ -227,7 +242,7 @@
  	return bdp;
  }
  
-@@ -724,6 +749,15 @@
+@@ -724,6 +760,15 @@
  	}
  
  	cwnd = max_t(u32, cwnd, bbr_param(sk, cwnd_min_target));
@@ -243,7 +258,7 @@
  done:
  	tcp_snd_cwnd_set(tp, min(cwnd, tp->snd_cwnd_clamp));  /* global cap */
  	if (bbr->mode == BBR_PROBE_RTT)  /* drain queue, refresh min_rtt */
-@@ -1078,8 +1112,8 @@
+@@ -1078,8 +1123,8 @@
  	/* See if we should use ECN sender logic for this connection. */
  	if (!bbr->ecn_eligible && bbr_can_use_ecn(sk) &&
  	    bbr_param(sk, ecn_factor) &&
