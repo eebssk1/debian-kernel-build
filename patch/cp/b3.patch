@@ -51,7 +51,15 @@
  };
  enum bbr_pacing_gain_phase {
  	BBR_BW_PROBE_UP		= 0,  /* push up inflight to probe for bw/vol */
-@@ -239,22 +239,22 @@
+@@ -235,26 +235,30 @@
+ 	BBR_BW_PROBE_REFILL	= 3,  /* v2: refill the pipe again to 100% */
+ };
+ 
++/* Avoid over pacing when app-limited in STARTUP, but still try to probe for more bandwidth.
++*/
++static const u32 bbr_limited_pacing_gain = BBR_UNIT * 61 / 50;
++
+ /* Try to keep at least this many packets in flight, if things go smoothly. For
   * smooth functioning, a sliding window protocol ACKing every other packet
   * needs at least 4 packets in flight:
   */
@@ -79,7 +87,7 @@
  
  /* Flags to control BBR ECN-related behavior... */
  
-@@ -264,30 +264,30 @@
+@@ -264,30 +268,30 @@
  /* Max RTT (in usec) at which to use sender-side ECN logic.
   * Disabled when 0 (ECN allowed at any RTT).
   */
@@ -116,7 +124,7 @@
  
  /* If non-zero, if in a cycle with no losses but some ECN marks, after ECN
   * clears then make the first round's increment to inflight_hi the following
-@@ -296,7 +296,7 @@
+@@ -296,7 +300,7 @@
  static const u32 bbr_ecn_reprobe_gain = BBR_UNIT * 1 / 2;
  
  /* Estimate bw probing has gone too far if loss rate exceeds this level. */
@@ -125,7 +133,7 @@
  
  /* Slow down for a packet loss recovered by TLP? */
  static const bool bbr_loss_probe_recovery = true;
-@@ -305,22 +305,22 @@
+@@ -305,22 +309,22 @@
   * and loss rate is higher than bbr_loss_thresh.
   * Disabled if 0.
   */
@@ -152,7 +160,7 @@
  
  /* Max number of packet-timed rounds to wait before probing for bandwidth.  If
   * we want to tolerate 1% random loss per round, and not have this cut our
-@@ -329,20 +329,20 @@
+@@ -329,20 +333,20 @@
   * We aim to be fair with Reno/CUBIC up to a BDP of at least:
   *  BDP = 25Mbps * .030sec /(1514bytes) = 61.9 packets
   */
@@ -177,22 +185,12 @@
  
  /* Use fast path if app-limited, no loss/ECN, and target cwnd was reached? */
  static const bool bbr_fast_path = true;
-@@ -464,12 +464,26 @@
- {
- 	struct tcp_sock *tp = tcp_sk(sk);
+@@ -466,10 +470,17 @@
  	struct bbr *bbr = inet_csk_ca(sk);
--	unsigned long rate = bbr_bw_to_pacing_rate(sk, bw, gain);
-+	bool force_update = false;
-+	unsigned long rate;
-+
-+	if (unlikely(tp->app_limited && bbr->mode == BBR_STARTUP)) {
-+		if (likely(gain > BBR_UNIT * 61 / 50))
-+			gain = BBR_UNIT * 61 / 50;
-+		force_update = true;
-+	}
-+	
-+	rate = bbr_bw_to_pacing_rate(sk, bw, gain);
+ 	unsigned long rate = bbr_bw_to_pacing_rate(sk, bw, gain);
  
++	bool force_update = unlikely(tp->app_limited && bbr->mode == BBR_STARTUP);
++
  	if (unlikely(!bbr->has_seen_rtt && tp->srtt_us))
  		bbr_init_pacing_rate_from_rtt(sk);
 -	if (bbr_full_bw_reached(sk) || rate > READ_ONCE(sk->sk_pacing_rate))
@@ -206,16 +204,20 @@
  }
  
  /* Return the number of segments BBR would like in a TSO/GSO skb, given a
-@@ -544,6 +558,8 @@
+@@ -544,6 +555,12 @@
  		 */
  		if (bbr->mode == BBR_PROBE_BW)
  			bbr_set_pacing_rate(sk, bbr_bw(sk), BBR_UNIT);
++		/* Avoid over-pacing in STARTUP if we're app-limited, required 
++		 * to avoid potentially very high pacing rates that can cause large queues and 
++		 * losses when restarting from idle, but still try to push a bit more.
++		 */
 +		else if (bbr->mode == BBR_STARTUP)
-+			bbr_set_pacing_rate(sk, bbr_bw(sk), BBR_UNIT * 61 / 50);
++			bbr_set_pacing_rate(sk, bbr_bw(sk), bbr_param(sk, limited_pacing_gain));
  		else if (bbr->mode == BBR_PROBE_RTT)
  			bbr_check_probe_rtt_done(sk);
  	} else if ((event == CA_EVENT_ECN_IS_CE ||
-@@ -590,6 +606,26 @@
+@@ -590,6 +607,26 @@
  	 */
  	bdp = (((w * gain) >> BBR_SCALE) + BW_UNIT - 1) / BW_UNIT;
  
@@ -242,7 +244,21 @@
  	return bdp;
  }
  
-@@ -724,6 +760,15 @@
+@@ -712,18 +749,27 @@
+ 	/* Update cwnd and enable fast path if cwnd reaches target_cwnd. */
+ 	bbr->try_fast_path = 0;
+ 	if (bbr_full_bw_reached(sk)) { /* only cut cwnd if we filled the pipe */
+-		cwnd += acked;
++		cwnd += acked + (acked >> 3);
+ 		if (cwnd >= target_cwnd) {
+ 			cwnd = target_cwnd;
+ 			bbr->try_fast_path = 1;
+ 		}
+ 	} else if (cwnd < target_cwnd || cwnd  < 2 * bbr->init_cwnd) {
+-		cwnd += acked;
++		cwnd += acked + (acked >> 3);
+ 	} else {
+ 		bbr->try_fast_path = 1;
  	}
  
  	cwnd = max_t(u32, cwnd, bbr_param(sk, cwnd_min_target));
@@ -258,7 +274,20 @@
  done:
  	tcp_snd_cwnd_set(tp, min(cwnd, tp->snd_cwnd_clamp));  /* global cap */
  	if (bbr->mode == BBR_PROBE_RTT)  /* drain queue, refresh min_rtt */
-@@ -1078,8 +1123,8 @@
+@@ -942,10 +988,11 @@
+ static void bbr_update_gains(struct sock *sk)
+ {
+ 	struct bbr *bbr = inet_csk_ca(sk);
++	struct tcp_sock *tp = tcp_sk(sk);
+ 
+ 	switch (bbr->mode) {
+ 	case BBR_STARTUP:
+-		bbr->pacing_gain = bbr_param(sk, startup_pacing_gain);
++		bbr->pacing_gain = READ_ONCE(tp->app_limited) ? bbr_param(sk, limited_pacing_gain) : bbr_param(sk, startup_pacing_gain);
+ 		bbr->cwnd_gain	 = bbr_param(sk, startup_cwnd_gain);
+ 		break;
+ 	case BBR_DRAIN:
+@@ -1078,8 +1125,8 @@
  	/* See if we should use ECN sender logic for this connection. */
  	if (!bbr->ecn_eligible && bbr_can_use_ecn(sk) &&
  	    bbr_param(sk, ecn_factor) &&
