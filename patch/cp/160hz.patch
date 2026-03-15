@@ -4,10 +4,10 @@
  	 on SMP and NUMA systems and exactly dividing by both PAL and
  	 NTSC frame rates for video and multimedia work.
  
-+	config HZ_125
-+		bool "125 HZ"
++	config HZ_160
++		bool "160 HZ"
 +	 help
-+	  125 Hz is a slightly better timer frequency for small VMs within
++	  160 Hz is a slightly better timer frequency for small VMs within
 +	  cloud.
 +
  	config HZ_500
@@ -18,6 +18,6 @@
  	default 250 if HZ_250
  	default 300 if HZ_300
  	default 500 if HZ_500
-+	default 125 if HZ_125
++	default 160 if HZ_160
  	default 1000 if HZ_1000
  
