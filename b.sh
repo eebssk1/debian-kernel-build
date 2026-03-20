@@ -129,7 +129,7 @@ fi
 if [ "x$(which ccache)" != "x" ]; then
 echo "Found ccache !"
 ccache -o compression_level=3
-ccache -o sloppiness=locale
+ccache -o sloppiness=locale,time_macros
 export CC="ccache $CC"
 fi
 
