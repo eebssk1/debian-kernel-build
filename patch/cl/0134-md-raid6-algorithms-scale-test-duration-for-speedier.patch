@@ -27,9 +27,9 @@ index a22a05c9af8a..e2ba261394f6 100644
  #include <linux/gfp.h>
 +#include <linux/sched/clock.h>
 +
- /* In .bss so it's zeroed */
- const char raid6_empty_zero_page[PAGE_SIZE] __attribute__((aligned(256)));
- EXPORT_SYMBOL(raid6_empty_zero_page);
+ #endif
+ 
+ struct raid6_calls raid6_call;
 @@ -143,12 +145,15 @@ static inline const struct raid6_recov_calls *raid6_choose_recov(void)
  static inline const struct raid6_calls *raid6_choose_gen(
  	void *(*const dptrs)[RAID6_TEST_DISKS], const int disks)

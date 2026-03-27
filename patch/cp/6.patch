@@ -1,13 +1,13 @@
 --- a/drivers/hwmon/acpi_power_meter.c	2024-03-06 11:46:25.209899188 +0800
 +++ b/drivers/hwmon/acpi_power_meter.c	2024-03-06 11:45:51.919099599 +0800
 @@ -692,7 +692,7 @@
- 
- 	if (resource->caps.flags & POWER_METER_CAN_CAP) {
- 		if (!can_cap_in_hardware()) {
--			dev_warn(&resource->acpi_dev->dev,
-+			dev_warn_once(&resource->acpi_dev->dev,
+ 		if ((res->caps.flags & POWER_METER_CAN_CAP) == 0) {
+ 			return 0;
+ 		} else if (!can_cap_in_hardware()) {
+-			dev_warn(&res->acpi_dev->dev,
++			dev_warn_once(&res->acpi_dev->dev,
  				 "Ignoring unsafe software power cap!\n");
- 			goto skip_unsafe_cap;
+ 			return 0;
  		}
 @@ -811,7 +811,7 @@
  		str++;

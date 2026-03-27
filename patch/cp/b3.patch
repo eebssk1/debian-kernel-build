@@ -290,7 +290,7 @@
 @@ -1078,8 +1125,8 @@
  	/* See if we should use ECN sender logic for this connection. */
  	if (!bbr->ecn_eligible && bbr_can_use_ecn(sk) &&
- 	    bbr_param(sk, ecn_factor) &&
+ 	    !!bbr_param(sk, ecn_factor) &&
 -	    (bbr->min_rtt_us <= bbr_ecn_max_rtt_us ||
 -	     !bbr_ecn_max_rtt_us))
 +	    (bbr->min_rtt_us > 750 && (bbr->min_rtt_us <= bbr_ecn_max_rtt_us ||

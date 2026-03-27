@@ -1,6 +1,6 @@
---- linux-6.1/include/net/tcp.h 	2022-12-11 22:15:18.000000000 +0000
-+++ linux-6.1/include/net/tcp.h 	2022-12-30 18:55:14.908021264 +0000
-@@ -75,16 +75,16 @@
+--- a/include/net/tcp.h	2026-03-27 06:42:42.268811465 +0000
++++ b/include/net/tcp.h	2026-03-27 06:41:23.686767730 +0000
+@@ -87,16 +87,16 @@
  #define TCP_BASE_MSS		1024
  
  /* probing interval, default to 10 minutes as per RFC4821 */
@@ -20,7 +20,7 @@
  
  /* Maximal number of window scale according to RFC1323 */
  #define TCP_MAX_WSCALE		14U
-@@ -124,7 +124,7 @@
+@@ -139,7 +139,7 @@
  				 * initial RTO.
  				 */
  
@@ -29,12 +29,12 @@
  				  * state, about 60 seconds	*/
  #define TCP_FIN_TIMEOUT	TCP_TIMEWAIT_LEN
                                   /* BSD style FIN_WAIT2 deadlock breaker.
-@@ -134,24 +134,24 @@
+@@ -149,25 +149,25 @@
  				  */
  #define TCP_FIN_TIMEOUT_MAX (120 * HZ) /* max TCP_LINGER2 value (two minutes) */
  
 -#define TCP_DELACK_MAX	((unsigned)(HZ/5))	/* maximal time to delay before sending an ACK */
-+#define TCP_DELACK_MAX	((unsigned)(HZ/10))	/* maximal time to delay before sending an ACK */
++#define TCP_DELACK_MAX	((unsigned)(HZ/8))	/* maximal time to delay before sending an ACK */
  static_assert((1 << ATO_BITS) > TCP_DELACK_MAX);
  
  #if HZ >= 100
@@ -46,10 +46,11 @@
  #define TCP_DELACK_MIN	4U
  #define TCP_ATO_MIN	4U
  #endif
--#define TCP_RTO_MAX	((unsigned)(120*HZ))
--#define TCP_RTO_MIN	((unsigned)(HZ/5))
-+#define TCP_RTO_MAX	((unsigned)(66*HZ))
-+#define TCP_RTO_MIN	((unsigned)(HZ/10))
+-#define TCP_RTO_MAX_SEC 120
++#define TCP_RTO_MAX_SEC 66
+ #define TCP_RTO_MAX	((unsigned)(TCP_RTO_MAX_SEC * HZ))
+-#define TCP_RTO_MIN	((unsigned)(HZ / 5))
++#define TCP_RTO_MIN	((unsigned)(HZ / 10))
  #define TCP_TIMEOUT_MIN	(2U) /* Min timeout for TCP timers in jiffies */
  
  #define TCP_TIMEOUT_MIN_US (2*USEC_PER_MSEC) /* Min TCP timeout in microsecs */
@@ -61,7 +62,7 @@
  						 * used as a fallback RTO for the
  						 * initial data transmission if no
  						 * valid RTT sample has been acquired,
-@@ -241,7 +241,7 @@
+@@ -268,7 +268,7 @@
  #define TCP_THIN_LINEAR_RETRIES 6       /* After 6 linear retries, do exp. backoff */
  
  /* TCP initial congestion window as per rfc6928 */
@@ -70,7 +71,7 @@
  
  /* Bit Flags for sysctl_tcp_fastopen */
  #define	TFO_CLIENT_ENABLE	1
-@@ -766,7 +766,7 @@
+@@ -838,7 +838,7 @@
  
  static inline u32 __tcp_set_rto(const struct tcp_sock *tp)
  {
@@ -78,4 +79,4 @@
 +	return max(usecs_to_jiffies(((tp->srtt_us >> 3) + tp->rttvar_us) * 9 / 10), READ_ONCE(tp->inet_conn.icsk_rto_min));
  }
  
- static inline void __tcp_fast_path_on(struct tcp_sock *tp, u32 snd_wnd)
+ u32 tcp_delack_max(const struct sock *sk);

@@ -1,0 +1,9 @@
+--- a/drivers/net/ethernet/intel/ice/Makefile	2026-03-27 15:49:32.864741713 +0000
++++ b/drivers/net/ethernet/intel/ice/Makefile	2026-03-27 15:50:10.000851932 +0000
+@@ -61,3 +61,6 @@
+ ice-$(CONFIG_ICE_SWITCHDEV) += ice_eswitch.o ice_eswitch_br.o
+ ice-$(CONFIG_GNSS) += ice_gnss.o
+ ice-$(CONFIG_ICE_HWMON) += ice_hwmon.o
++
++CFLAGS_REMOVE_ice_flex_pipe.o += -O3 -fipa-pta
++CFLAGS_ice_flex_pipe.o += -O2
