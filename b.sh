@@ -45,11 +45,6 @@ echo VER=$(cat version) >> $GITHUB_ENV
 
 cd linux-* || exit 1
 
-for a in $(cat ../update); do
-echo apply update $a
-patch -f -p1 -i ../patch-$a || exit 128
-done
-
 for a in ../patch/rev/*.patch; do
 [ -f "$a" ] || continue
 echo Revesing $a
