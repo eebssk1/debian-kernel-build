@@ -21,17 +21,16 @@ index e6f211dcf82e..0ea48434ac7d 100644
  
  	/*
  	 * The number of pages to batch allocate is either ~0.1%
-@@ -5606,7 +5607,12 @@
+@@ -5606,7 +5607,11 @@
  	 * size is striking a balance between allocation latency
  	 * and zone lock contention.
  	 */
 -	batch = min(zone_managed_pages(zone) >> 10, SZ_1M / PAGE_SIZE);
-+	batch = SZ_1M / PAGE_SIZE;
-+	if (mem >= 2032)
-+		batch = 4 * SZ_1M / PAGE_SIZE;
-+	else if (mem >= 520)
-+		batch = 2 * SZ_1M / PAGE_SIZE;
-+	batch = min(zone_managed_pages(zone) >> 10, batch);
++	batch = min(zone_managed_pages(zone) >> 11, SZ_512K / PAGE_SIZE);
++	if (mem <= 2032) {
++		batch = (mem >= 640 ? 2 : 1) * SZ_1M / PAGE_SIZE;
++		batch = min(zone_managed_pages(zone) >> 10, batch);
++	}
  	batch /= 4;		/* We effectively *= 4 below */
  	if (batch < 1)
  		batch = 1;
