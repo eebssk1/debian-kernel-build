@@ -1,0 +1,20 @@
+--- a/mm/damon/core.c	2026-03-25 17:12:04.000000000 +0000
++++ b/mm/damon/core.c	2026-04-06 08:35:55.385243945 +0000
+@@ -15,6 +15,7 @@
+ #include <linux/slab.h>
+ #include <linux/string.h>
+ #include <linux/string_choices.h>
++#include <linux/sched.h>
+ 
+ #define CREATE_TRACE_POINTS
+ #include <trace/events/damon.h>
+@@ -1323,6 +1324,9 @@
+ 			ctx->kdamond = NULL;
+ 		} else {
+ 			wait_for_completion(&ctx->kdamond_started);
++			struct sched_param sparam = { .sched_priority = 0 };
++			sched_setscheduler_nocheck(ctx->kdamond, SCHED_BATCH, &sparam);
++			set_user_nice(ctx->kdamond, 2);
+ 		}
+ 	}
+ 	mutex_unlock(&ctx->kdamond_lock);
