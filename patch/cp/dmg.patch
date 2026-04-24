@@ -1,0 +1,11 @@
+--- a/drivers/gpu/drm/drm_fb_helper.c	2026-04-24 02:19:10.223620513 +0000
++++ b/drivers/gpu/drm/drm_fb_helper.c	2026-04-24 02:21:09.484622661 +0000
+@@ -632,7 +632,7 @@
+ 
+ 	drm_fb_helper_add_damage_clip(helper, x, y, width, height);
+ 
+-	schedule_work(&helper->damage_work);
++	queue_work(system_long_wq, &helper->damage_work);
+ }
+ 
+ /*
