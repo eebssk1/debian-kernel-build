@@ -1,0 +1,25 @@
+--- a/drivers/md/dm-kcopyd.c	2026-04-24 12:26:28.865121595 +0000
++++ b/drivers/md/dm-kcopyd.c	2026-04-24 12:34:52.882100072 +0000
+@@ -29,10 +29,10 @@
+ 
+ #include "dm-core.h"
+ 
+-#define SPLIT_COUNT	8
+-#define MIN_JOBS	8
++#define SPLIT_COUNT	10
++#define MIN_JOBS	10
+ 
+-#define DEFAULT_SUB_JOB_SIZE_KB 512
++#define DEFAULT_SUB_JOB_SIZE_KB 640
+ #define MAX_SUB_JOB_SIZE_KB     1024
+ 
+ static unsigned int kcopyd_subjob_size_kb = DEFAULT_SUB_JOB_SIZE_KB;
+@@ -934,7 +934,7 @@
+ 		goto bad_slab;
+ 
+ 	INIT_WORK(&kc->kcopyd_work, do_work);
+-	kc->kcopyd_wq = alloc_workqueue("kcopyd", WQ_MEM_RECLAIM, 0);
++	kc->kcopyd_wq = alloc_workqueue("kcopyd", WQ_MEM_RECLAIM | WQ_UNBOUND, 0);
+ 	if (!kc->kcopyd_wq) {
+ 		r = -ENOMEM;
+ 		goto bad_workqueue;
