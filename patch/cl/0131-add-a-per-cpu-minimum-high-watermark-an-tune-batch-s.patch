@@ -13,15 +13,16 @@ diff --git a/mm/page_alloc.c b/mm/page_alloc.c
 index e6f211dcf82e..0ea48434ac7d 100644
 --- a/mm/page_alloc.c
 +++ b/mm/page_alloc.c
-@@ -5599,6 +5599,7 @@
+@@ -5906,6 +5906,8 @@
  {
  #ifdef CONFIG_MMU
  	int batch;
++	int znode = 0;
 +	int mem = (totalram_pages() * PAGE_SIZE) >> 20;
  
  	/*
  	 * The number of pages to batch allocate is either ~0.1%
-@@ -5606,7 +5607,11 @@
+@@ -5913,7 +5915,11 @@
  	 * size is striking a balance between allocation latency
  	 * and zone lock contention.
  	 */
@@ -34,3 +35,16 @@ index e6f211dcf82e..0ea48434ac7d 100644
  	batch /= 4;		/* We effectively *= 4 below */
  	if (batch < 1)
  		batch = 1;
+@@ -5930,6 +5936,12 @@
+ 	 */
+ 	batch = rounddown_pow_of_two(batch + batch/2) - 1;
+ 
++#ifdef CONFIG_NUMA
++	znode = zone->node;
++#endif
++
++	pr_info_ratelimited("Mem Zone %d batch size is now %d KB.\n", znode, batch);
++	
+ 	return batch;
+ 
+ #else
