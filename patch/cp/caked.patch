@@ -1,0 +1,60 @@
+--- a/net/sched/sch_cake.c	2026-04-29 06:49:15.292587612 +0000
++++ b/net/sched/sch_cake.c	2026-04-29 06:47:35.923591855 +0000
+@@ -1739,6 +1739,34 @@
+ 
+ static void cake_reconfigure(struct Qdisc *sch);
+ 
++static bool cake_should_drop_burst(struct sk_buff *skb, struct Qdisc *sch, 
++                                   struct cake_sched_data *q)
++{
++	u16 len;
++	u16 avg_pkt_size;
++	u32 rate_Bps;
++	u32 dynamic_pressure_bytes;
++	u32 qlen;
++	const u16 SMALL_PKT_THRESH = 506;
++	const u16 MAX_STANDARD_MTU = 1536;
++	const u16 DOMINATION_THRESH = 1060;
++
++	if (q->rate_bps == 0) return false;
++	len = qdisc_pkt_len(skb);
++	rate_Bps = (u32)(q->rate_bps >> 3);
++	dynamic_pressure_bytes = (rate_Bps * 70) / 100;
++	qlen = qdisc_qlen(sch);
++	avg_pkt_size = (qlen > 0) ? ((u16)(sch->qstats.backlog / qlen)) : 0;
++
++	if (sch->qstats.backlog > dynamic_pressure_bytes && 
++		avg_pkt_size > DOMINATION_THRESH &&
++		len > SMALL_PKT_THRESH &&
++		len <= MAX_STANDARD_MTU) {
++		return true;
++	}
++	return false;
++}
++
+ static s32 cake_enqueue(struct sk_buff *skb, struct Qdisc *sch,
+ 			struct sk_buff **to_free)
+ {
+@@ -1802,6 +1830,10 @@
+ 			cobalt_set_enqueue_time(segs, now);
+ 			get_cobalt_cb(segs)->adjusted_len = cake_overhead(q,
+ 									  segs);
++			if (unlikely(cake_should_drop_burst(segs, sch, q))) {
++				qdisc_drop(segs, sch, to_free);
++				continue;
++			}
+ 			flow_queue_add(flow, segs);
+ 
+ 			sch->q.qlen++;
+@@ -1826,6 +1858,11 @@
+ 
+ 		cobalt_set_enqueue_time(skb, now);
+ 		get_cobalt_cb(skb)->adjusted_len = cake_overhead(q, skb);
++
++		if (unlikely(cake_should_drop_burst(skb, sch, q))) {
++			return qdisc_drop(skb, sch, to_free);
++		}
++
+ 		flow_queue_add(flow, skb);
+ 
+ 		if (q->ack_filter)
