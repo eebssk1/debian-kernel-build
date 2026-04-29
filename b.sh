@@ -43,7 +43,9 @@ fi
 
 echo VER=$(cat version) >> $GITHUB_ENV
 
-cd linux-* || exit 1
+mv linux-* linux-src || exit 1
+
+cd linux-src || exit 1
 
 for a in ../patch/rev/*.patch; do
 [ -f "$a" ] || continue
@@ -118,8 +120,8 @@ fi
 
 if [ "x$(which ccache)" != "x" ]; then
 echo "Found ccache !"
-ccache -o compression_level=3
-ccache -o sloppiness=locale,time_macros,include_file_mtime,file_stat_matches
+export CCACHE_SLOPPINESS="locale,time_macros,include_file_mtime,file_stat_matches"
+export CCACHE_COMPRESSLEVEL=2
 export CC="ccache $CC"
 fi
 
