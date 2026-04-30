@@ -6,4 +6,4 @@
  ice-$(CONFIG_ICE_HWMON) += ice_hwmon.o
 +
 +CFLAGS_REMOVE_ice_flex_pipe.o += -O3 -fipa-pta
-+CFLAGS_ice_flex_pipe.o += -O2
++CFLAGS_ice_flex_pipe.o += -O1
