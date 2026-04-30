@@ -13,11 +13,10 @@ diff --git a/mm/page_alloc.c b/mm/page_alloc.c
 index e6f211dcf82e..0ea48434ac7d 100644
 --- a/mm/page_alloc.c
 +++ b/mm/page_alloc.c
-@@ -5906,6 +5906,8 @@
+@@ -5906,6 +5906,7 @@
  {
  #ifdef CONFIG_MMU
  	int batch;
-+	int znode = 0;
 +	int mem = (totalram_pages() * PAGE_SIZE) >> 20;
  
  	/*
@@ -27,7 +26,7 @@ index e6f211dcf82e..0ea48434ac7d 100644
  	 * and zone lock contention.
  	 */
 -	batch = min(zone_managed_pages(zone) >> 10, SZ_1M / PAGE_SIZE);
-+	batch = min(zone_managed_pages(zone) >> 11, SZ_512K / PAGE_SIZE);
++	batch = min(zone_managed_pages(zone) >> 11, SZ_1M / PAGE_SIZE);
 +	if (mem <= 2032) {
 +		batch = (mem >= 640 ? 2 : 1) * SZ_1M / PAGE_SIZE;
 +		batch = min(zone_managed_pages(zone) >> 10, batch);
@@ -35,16 +34,3 @@ index e6f211dcf82e..0ea48434ac7d 100644
  	batch /= 4;		/* We effectively *= 4 below */
  	if (batch < 1)
  		batch = 1;
-@@ -5930,6 +5936,12 @@
- 	 */
- 	batch = rounddown_pow_of_two(batch + batch/2) - 1;
- 
-+#ifdef CONFIG_NUMA
-+	znode = zone->node;
-+#endif
-+
-+	pr_info_ratelimited("Mem Zone %d batch size is now %d KB.\n", znode, batch);
-+	
- 	return batch;
- 
- #else
