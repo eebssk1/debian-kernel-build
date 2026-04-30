@@ -1,0 +1,68 @@
+diff --git a/include/linux/sched.h b/include/linux/sched.h
+index 3e2005e9e2f0..7790157d9a04 100644
+--- a/include/linux/sched.h
++++ b/include/linux/sched.h
+@@ -508,8 +508,10 @@ struct sched_avg {
+ 	u64				runnable_sum;
+ 	u32				util_sum;
+ 	u32				period_contrib;
++	u32				wakeup_sum;
+ 	unsigned long			load_avg;
+ 	unsigned long			runnable_avg;
++	unsigned long			wakeup_avg;
+ 	unsigned long			util_avg;
+ 	unsigned int			util_est;
+ } ____cacheline_aligned;
+diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+index 1574c960e077..acfabb17c0ef 100644
+--- a/kernel/sched/fair.c
++++ b/kernel/sched/fair.c
+@@ -5279,6 +5279,17 @@ place_entity(struct cfs_rq *cfs_rq, struct sched_entity *se, int flags)
+ 		lag = div_s64(lag, load);
+ 	}
+ 
++	#define WAKEUP_PENALTY_THRESHOLD 690
++	#define UTIL_LOW_THRESHOLD       120
++
++	if (unlikely(se->avg.wakeup_avg > WAKEUP_PENALTY_THRESHOLD &&
++	    se->avg.util_avg < UTIL_LOW_THRESHOLD)) {
++		if (lag > 0)
++			lag >>= 1;
++		if (se->vlag > 0)
++			se->vlag >>= 1;
++	}
++
+ 	se->vruntime = vruntime - lag;
+ 
+ 	if (se->rel_deadline) {
+@@ -5312,6 +5323,10 @@ enqueue_entity(struct cfs_rq *cfs_rq, struct sched_entity *se, int flags)
+ {
+ 	bool curr = cfs_rq->curr == se;
+ 
++	if (flags & ENQUEUE_WAKEUP) {
++		se->avg.wakeup_sum += 1024;
++	}
++
+ 	/*
+ 	 * If we're the current task, we must renormalise before calling
+ 	 * update_curr().
+diff --git a/kernel/sched/pelt.c b/kernel/sched/pelt.c
+index fa83bbaf4f3e..655134e3eef6 100644
+--- a/kernel/sched/pelt.c
++++ b/kernel/sched/pelt.c
+@@ -117,6 +117,7 @@ accumulate_sum(u64 delta, struct sched_avg *sa,
+ 		sa->runnable_sum =
+ 			decay_load(sa->runnable_sum, periods);
+ 		sa->util_sum = decay_load((u64)(sa->util_sum), periods);
++		sa->wakeup_sum = decay_load((u64)(sa->wakeup_sum), periods);
+ 
+ 		/*
+ 		 * Step 2
+@@ -265,6 +266,7 @@ ___update_load_avg(struct sched_avg *sa, unsigned long load)
+ 	sa->load_avg = div_u64(load * sa->load_sum, divider);
+ 	sa->runnable_avg = div_u64(sa->runnable_sum, divider);
+ 	WRITE_ONCE(sa->util_avg, sa->util_sum / divider);
++	WRITE_ONCE(sa->wakeup_avg, sa->wakeup_sum / divider);
+ }
+ 
+ /*
