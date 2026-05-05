@@ -32,7 +32,7 @@ index 1574c960e..2c9fcacbf 100644
  
 +__read_mostly unsigned int sysctl_sched_burst_penalty_enable = 1;
 +__read_mostly unsigned int sysctl_sched_burst_penalty_nice_strict = 1;
-+__read_mostly unsigned int sysctl_sched_burst_penalty_relief = 6;
++__read_mostly unsigned int sysctl_sched_burst_penalty_relief = 4;
 +
  static int __init setup_sched_thermal_decay_shift(char *str)
  {
@@ -41,8 +41,8 @@ index 1574c960e..2c9fcacbf 100644
  		lag = div_s64(lag, load);
  	}
  
-+	#define WAKEUP_PENALTY_THRESHOLD 690
-+	#define UTIL_LOW_THRESHOLD       120
++	#define WAKEUP_PENALTY_THRESHOLD 702
++	#define UTIL_LOW_THRESHOLD       102
 +
 +	if (unlikely(sysctl_sched_burst_penalty_enable &&
 +	    se->avg.wakeup_avg > WAKEUP_PENALTY_THRESHOLD &&

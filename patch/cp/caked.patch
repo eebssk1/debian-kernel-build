@@ -4,7 +4,7 @@
  
  static void cake_reconfigure(struct Qdisc *sch);
  
-+static bool cake_should_drop_burst(struct sk_buff *skb, struct Qdisc *sch, 
++static inline bool cake_should_drop_burst(struct sk_buff *skb, struct Qdisc *sch, 
 +                                   struct cake_sched_data *q)
 +{
 +	u16 len;
@@ -12,14 +12,14 @@
 +	u32 rate_Bps;
 +	u32 dynamic_pressure_bytes;
 +	u32 qlen;
-+	const u16 SMALL_PKT_THRESH = 506;
++	const u16 SMALL_PKT_THRESH = 600;
 +	const u16 MAX_STANDARD_MTU = 1536;
-+	const u16 DOMINATION_THRESH = 1060;
++	const u16 DOMINATION_THRESH = 1100;
 +
 +	if (q->rate_bps == 0) return false;
 +	len = qdisc_pkt_len(skb);
 +	rate_Bps = (u32)(q->rate_bps >> 3);
-+	dynamic_pressure_bytes = (rate_Bps * 70) / 100;
++	dynamic_pressure_bytes = (rate_Bps * 81) / 100;
 +	qlen = qdisc_qlen(sch);
 +	avg_pkt_size = (qlen > 0) ? ((u16)(sch->qstats.backlog / qlen)) : 0;
 +
