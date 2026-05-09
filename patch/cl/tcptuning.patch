@@ -50,15 +50,15 @@
 +#define TCP_RTO_MAX_SEC 66
  #define TCP_RTO_MAX	((unsigned)(TCP_RTO_MAX_SEC * HZ))
 -#define TCP_RTO_MIN	((unsigned)(HZ / 5))
-+#define TCP_RTO_MIN	((unsigned)(HZ / 10))
++#define TCP_RTO_MIN	((unsigned)(HZ / 8))
  #define TCP_TIMEOUT_MIN	(2U) /* Min timeout for TCP timers in jiffies */
  
  #define TCP_TIMEOUT_MIN_US (2*USEC_PER_MSEC) /* Min TCP timeout in microsecs */
  
 -#define TCP_TIMEOUT_INIT ((unsigned)(1*HZ))	/* RFC6298 2.1 initial RTO value	*/
 -#define TCP_TIMEOUT_FALLBACK ((unsigned)(3*HZ))	/* RFC 1122 initial RTO value, now
-+#define TCP_TIMEOUT_INIT ((unsigned)(HZ/5*2))	/* RFC6298 2.1 initial RTO value	*/
-+#define TCP_TIMEOUT_FALLBACK ((unsigned)(HZ/5*6))	/* RFC 1122 initial RTO value, now
++#define TCP_TIMEOUT_INIT ((unsigned)(HZ/2))	/* RFC6298 2.1 initial RTO value	*/
++#define TCP_TIMEOUT_FALLBACK ((unsigned)(HZ/5*7))	/* RFC 1122 initial RTO value, now
  						 * used as a fallback RTO for the
  						 * initial data transmission if no
  						 * valid RTT sample has been acquired,
@@ -76,7 +76,7 @@
  static inline u32 __tcp_set_rto(const struct tcp_sock *tp)
  {
 -	return usecs_to_jiffies((tp->srtt_us >> 3) + tp->rttvar_us);
-+	return max(usecs_to_jiffies(((tp->srtt_us >> 3) + tp->rttvar_us) * 9 / 10), READ_ONCE(tp->inet_conn.icsk_rto_min));
++	return max(usecs_to_jiffies(((tp->srtt_us >> 3) + tp->rttvar_us) * 19 / 20), READ_ONCE(tp->inet_conn.icsk_rto_min));
  }
  
  u32 tcp_delack_max(const struct sock *sk);
