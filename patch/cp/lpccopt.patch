@@ -2,7 +2,7 @@ diff --git a/net/ipv4/tcp_input.c b/net/ipv4/tcp_input.c
 index a9ac5fa06d4a..8fa9150d6cf7 100644
 --- a/net/ipv4/tcp_input.c
 +++ b/net/ipv4/tcp_input.c
-@@ -3953,6 +3953,34 @@ static u32 tcp_newly_delivered(struct sock *sk, u32 prior_delivered, int flag)
+@@ -3953,6 +3953,35 @@ static u32 tcp_newly_delivered(struct sock *sk, u32 prior_delivered, int flag)
  	return delivered;
  }
  
@@ -12,6 +12,10 @@ index a9ac5fa06d4a..8fa9150d6cf7 100644
 +    const struct inet_connection_sock *icsk = inet_csk(sk);
 +    const struct dst_entry *dst;
 +    u32 min_rtt;
++
++    if (likely(READ_ONCE(tp->delivered) > 16))
++        return;
++
 +    min_rtt = tcp_min_rtt(tp);
 +
 +    if (unlikely(min_rtt == 0))
@@ -24,9 +28,6 @@ index a9ac5fa06d4a..8fa9150d6cf7 100644
 +    if (dst && dst_metric(dst, RTAX_CC_ALGO))
 +        return;
 +
-+    if (likely(READ_ONCE(tp->bytes_acked) > 0x200000))
-+        return;
-+
 +    if (unlikely(min_rtt <= 750)) {
 +        if (unlikely(strncmp(icsk->icsk_ca_ops->name, "highspeed", 9) != 0)) {
 +            tcp_set_congestion_control(sk, "highspeed", false, true);
@@ -37,7 +38,7 @@ index a9ac5fa06d4a..8fa9150d6cf7 100644
  /* This routine deals with incoming acks, but not outgoing ones. */
  static int tcp_ack(struct sock *sk, const struct sk_buff *skb, int flag)
  {
-@@ -4075,6 +4103,8 @@ static int tcp_ack(struct sock *sk, const struct sk_buff *skb, int flag)
+@@ -4075,6 +4104,8 @@ static int tcp_ack(struct sock *sk, const struct sk_buff *skb, int flag)
  	flag |= tcp_clean_rtx_queue(sk, skb, prior_fack, prior_snd_una,
  				    &sack_state, flag & FLAG_ECE);
  
