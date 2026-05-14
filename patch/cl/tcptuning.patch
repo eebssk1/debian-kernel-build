@@ -76,7 +76,7 @@
  static inline u32 __tcp_set_rto(const struct tcp_sock *tp)
  {
 -	return usecs_to_jiffies((tp->srtt_us >> 3) + tp->rttvar_us);
-+	return max(usecs_to_jiffies(((tp->srtt_us >> 3) + tp->rttvar_us) * 19 / 20), READ_ONCE(tp->inet_conn.icsk_rto_min));
++	return max(usecs_to_jiffies((unsigned int)((u64)((tp->srtt_us >> 3) + tp->rttvar_us) * 19 / 20)), READ_ONCE(tp->inet_conn.icsk_rto_min));
  }
  
  u32 tcp_delack_max(const struct sock *sk);
