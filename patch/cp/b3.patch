@@ -189,7 +189,7 @@
  	struct bbr *bbr = inet_csk_ca(sk);
  	unsigned long rate = bbr_bw_to_pacing_rate(sk, bw, gain);
  
-+	bool force_update = unlikely(bbr->mode == BBR_STARTUP && (tp->app_limited || rate < READ_ONCE(sk->sk_pacing_rate)));
++	bool force_update = unlikely(bbr->mode == BBR_STARTUP && tp->app_limited);
 +
  	if (unlikely(!bbr->has_seen_rtt && tp->srtt_us))
  		bbr_init_pacing_rate_from_rtt(sk);
