@@ -92,13 +92,13 @@
   * Disabled when 0 (ECN allowed at any RTT).
   */
 -static const u32 bbr_ecn_max_rtt_us = 5000;
-+static const u32 bbr_ecn_max_rtt_us = 6700;
++static const u32 bbr_ecn_max_rtt_us = 7200;
  
  /* On losses, scale down inflight and pacing rate by beta scaled by BBR_SCALE.
   * No loss response when 0.
   */
 -static const u32 bbr_beta = BBR_UNIT * 30 / 100;
-+static const u32 bbr_beta = BBR_UNIT * 2 / 25;
++static const u32 bbr_beta = BBR_UNIT * 7 / 100;
  
  /* Gain factor for ECN mark ratio samples, scaled by BBR_SCALE (1/16 = 6.25%) */
 -static const u32 bbr_ecn_alpha_gain = BBR_UNIT * 1 / 16;
@@ -129,7 +129,7 @@
  
  /* Estimate bw probing has gone too far if loss rate exceeds this level. */
 -static const u32 bbr_loss_thresh = BBR_UNIT * 2 / 100;  /* 2% loss */
-+static const u32 bbr_loss_thresh = BBR_UNIT * 7 / 100;  /* 7% loss */
++static const u32 bbr_loss_thresh = BBR_UNIT * 2 / 25;  /* 8% loss */
  
  /* Slow down for a packet loss recovered by TLP? */
  static const bool bbr_loss_probe_recovery = true;
@@ -210,22 +210,22 @@
  
 +	if(bbr->min_rtt_us >= 180 * USEC_PER_MSEC) {
 +			bdp += 8;
-+			bdp += bw >= 147456 ? 6 : 3;
++			bdp += bw >= 44738 ? 6 : 3;
 +	} else if(bbr->min_rtt_us >= 140 * USEC_PER_MSEC) {
 +			bdp += 6;
-+			bdp += bw >= 147456 ? 5 : 2;
++			bdp += bw >= 44738 ? 5 : 2;
 +	} else if(bbr->min_rtt_us >= 90 * USEC_PER_MSEC) {
 +			bdp += 5;
-+			bdp += bw >= 147456 ? 4 : 1;
++			bdp += bw >= 44738 ? 4 : 1;
 +	} else if(bbr->min_rtt_us >= 31 * USEC_PER_MSEC) {
 +			bdp += 4;
-+			bdp += bw >= 147456 ? 3 : 1;
++			bdp += bw >= 44738 ? 3 : 1;
 +	} else if(bbr->min_rtt_us >= 16 * USEC_PER_MSEC) {
 +			bdp += 2;
-+			bdp += bw >= 147456 ? 2 : 0;
++			bdp += bw >= 44738 ? 2 : 0;
 +	} else if(bbr->min_rtt_us >= 6 * USEC_PER_MSEC) {
 +			bdp += 1;
-+			bdp += bw >= 147456 ? 1 : 0;
++			bdp += bw >= 44738 ? 1 : 0;
 +	}
 +
  	return bdp;
