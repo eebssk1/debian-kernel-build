@@ -37,12 +37,12 @@ index 1574c960e..2c9fcacbf 100644
  static int __init setup_sched_thermal_decay_shift(char *str)
  {
  	pr_warn("Ignoring the deprecated sched_thermal_decay_shift= option\n");
-@@ -5279,6 +5283,36 @@ place_entity(struct cfs_rq *cfs_rq, struct sched_entity *se, int flags)
+@@ -5279,6 +5283,40 @@ place_entity(struct cfs_rq *cfs_rq, struct sched_entity *se, int flags)
  		lag = div_s64(lag, load);
  	}
  
-+	#define WAKEUP_PENALTY_THRESHOLD 702
-+	#define UTIL_LOW_THRESHOLD       102
++	#define WAKEUP_PENALTY_THRESHOLD 711
++	#define UTIL_LOW_THRESHOLD       76
 +
 +	if (unlikely(sysctl_sched_burst_penalty_enable &&
 +	    se->avg.wakeup_avg > WAKEUP_PENALTY_THRESHOLD &&
@@ -60,11 +60,15 @@ index 1574c960e..2c9fcacbf 100644
 +			if (unlikely(sysctl_sched_burst_penalty_relief > 0 &&
 +			    se->wakeup_penalty_count >= sysctl_sched_burst_penalty_relief)) {
 +				se->wakeup_penalty_count = 0;
++				if (lag > 0)
++					lag += lag / 10;
++				if (se->vlag > 0)
++					se->vlag += se->vlag / 10;
 +			} else {
 +				if (lag > 0)
-+					lag >>= 1;
++					lag -= lag / 3;
 +				if (se->vlag > 0)
-+					se->vlag >>= 1;
++					se->vlag -= se->vlag / 3;
 +			}
 +		}
 +	} else {
@@ -74,12 +78,12 @@ index 1574c960e..2c9fcacbf 100644
  	se->vruntime = vruntime - lag;
  
  	if (se->rel_deadline) {
-@@ -5312,6 +5346,10 @@ enqueue_entity(struct cfs_rq *cfs_rq, struct sched_entity *se, int flags)
+@@ -5312,6 +5350,10 @@ enqueue_entity(struct cfs_rq *cfs_rq, struct sched_entity *se, int flags)
  {
  	bool curr = cfs_rq->curr == se;
  
 +	if (flags & ENQUEUE_WAKEUP) {
-+		se->avg.wakeup_sum += 1024;
++		se->avg.wakeup_sum += 1008;
 +	}
 +
  	/*
