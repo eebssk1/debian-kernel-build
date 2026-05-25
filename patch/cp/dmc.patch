@@ -1,11 +1,12 @@
 --- a/drivers/md/dm-cache-target.c	2026-04-24 01:04:41.846714002 +0000
 +++ b/drivers/md/dm-cache-target.c	2026-04-24 01:27:22.332797348 +0000
-@@ -2533,7 +2533,7 @@
+@@ -2533,8 +2533,8 @@
  		goto bad;
  	}
  
--	cache->wq = alloc_workqueue("dm-" DM_MSG_PREFIX, WQ_MEM_RECLAIM, 0);
-+	cache->wq = alloc_workqueue("dm-" DM_MSG_PREFIX, WQ_MEM_RECLAIM | WQ_UNBOUND, 0);
+ 	cache->wq = alloc_workqueue("dm-" DM_MSG_PREFIX,
+-				    WQ_MEM_RECLAIM | WQ_PERCPU, 0);
++				    WQ_MEM_RECLAIM | WQ_UNBOUND, 0);
  	if (!cache->wq) {
  		*error = "could not create workqueue for metadata object";
  		goto bad;
