@@ -7,7 +7,7 @@ fi
 
 apt-get update
 apt-get upgrade -y
-apt-get install -y libelf-dev libssl-dev dwarves bc kmod cpio python3 zstd debhelper pahole libdw-dev  || exit 1
+apt-get install --reinstall -y libelf-dev libssl-dev dwarves bc kmod cpio python3 zstd debhelper pahole libdw-dev  rsync || exit 1
 
 FILE=$(cat version)-xanmod$(cat build).tar.bz2
 
