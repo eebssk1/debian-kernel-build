@@ -22,11 +22,11 @@
  
          # Align jump targets to 1 byte, not the default 16 bytes:
 -        KBUILD_CFLAGS += $(call cc-option,-falign-jumps=1)
-+        KBUILD_CFLAGS += $(call cc-option,-falign-jumps=8:5:2)
++        KBUILD_CFLAGS += $(call cc-option,-falign-jumps=4)
  
          # Pack loops tightly as well:
 -        KBUILD_CFLAGS += $(call cc-option,-falign-loops=1)
-+        KBUILD_CFLAGS += $(call cc-option,-falign-loops=8:5:2)
++        KBUILD_CFLAGS += $(call cc-option,-falign-loops=4)
  
          # Don't autogenerate traditional x87 instructions
          KBUILD_CFLAGS += -mno-80387
@@ -38,7 +38,7 @@
            32 bit alignment
 
 +config DEBUG_FORCE_FUNCTION_ALIGN_32B_SOFT
-+       bool "allow 24 byte alignment by compiler choice"
++       bool "allow smaller fallback alignment by compiler choice"
 +       depends on DEBUG_FORCE_FUNCTION_ALIGN_32B && (!CFI_CLANG)
 +       help
 +         saves space slightly for some functions
@@ -47,8 +47,8 @@
  # Select this config option from the architecture Kconfig, if it
  # is preferred to always offer frame pointers as a config
 
---- a/Makefile	2025-01-02 14:14:37.789973953 +0000
-+++ b/Makefile	2025-01-02 14:16:29.734776394 +0000
+--- a/Makefile
++++ b/Makefile
 @@ -879,7 +879,7 @@
  
  # Clear used registers at func exit (to reduce data lifetime and ROP gadgets).
@@ -58,7 +58,7 @@
  endif
  
  ifdef CONFIG_FUNCTION_TRACER
-@@ -982,13 +982,15 @@
+@@ -982,12 +982,21 @@
  export CC_FLAGS_NO_FPU
  
  ifneq ($(CONFIG_FUNCTION_ALIGNMENT),0)
@@ -68,15 +68,23 @@
 -ifdef CONFIG_CC_HAS_MIN_FUNCTION_ALIGNMENT
 -KBUILD_CFLAGS += -fmin-function-alignment=$(CONFIG_FUNCTION_ALIGNMENT)
 -else
+-KBUILD_CFLAGS += -falign-functions=$(CONFIG_FUNCTION_ALIGNMENT)
+-endif
 +ifeq ($(CONFIG_DEBUG_FORCE_FUNCTION_ALIGN_32B_SOFT),y)
 +CONFIG_FUNCTION_ALIGNMENT = 24
 +endif
- KBUILD_CFLAGS += -falign-functions=$(CONFIG_FUNCTION_ALIGNMENT)
++REAL_FUNCTION_ALIGNMENT = $(CONFIG_FUNCTION_ALIGNMENT)
++ifeq ($(REAL_FUNCTION_ALIGNMENT), 24)
++REAL_FUNCTION_ALIGNMENT = 32:19:16:12
++endif
++ifeq ($(call cc-option,-falign-functions=$(REAL_FUNCTION_ALIGNMENT)),)
++REAL_FUNCTION_ALIGNMENT = $(CONFIG_FUNCTION_ALIGNMENT)
++endif
++KBUILD_CFLAGS += -falign-functions=$(REAL_FUNCTION_ALIGNMENT)
 +ifeq ($(shell expr $(CONFIG_FUNCTION_ALIGNMENT) \> 8), 1)
 +KBUILD_CFLAGS += $(call cc-option, -fmin-function-alignment=8)
 +endif
-+ifeq ($(shell expr $(CONFIG_FUNCTION_ALIGNMENT) \> 24), 1)
++ifeq ($(shell expr $(CONFIG_FUNCTION_ALIGNMENT) \> 23), 1)
 +KBUILD_CFLAGS += $(call cc-option, -flimit-function-alignment)
++endif
  endif
- endif
- 
