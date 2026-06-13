@@ -1,13 +1,13 @@
---- a/net/sched/sch_sfq.c	2024-12-09 16:55:55.000000000 +0000
-+++ b/net/sched/sch_sfq.c	2025-01-03 13:22:02.510816133 +0000
+--- a/net/sched/sch_sfq.c	2026-06-14 01:11:03.351041400 +0800
++++ b/net/sched/sch_sfq.c	2026-06-14 01:15:48.262088400 +0800
 @@ -71,11 +71,11 @@
  
  	It is easy to increase these values, but not in flight.  */
  
 -#define SFQ_MAX_DEPTH		127 /* max number of packets per flow */
 -#define SFQ_DEFAULT_FLOWS	128
-+#define SFQ_MAX_DEPTH		268 /* max number of packets per flow */
-+#define SFQ_DEFAULT_FLOWS	212
++#define SFQ_MAX_DEPTH		352 /* max number of packets per flow */
++#define SFQ_DEFAULT_FLOWS	274
  #define SFQ_MAX_FLOWS		(0x10000 - SFQ_MAX_DEPTH - 1) /* max number of flows */
  #define SFQ_EMPTY_SLOT		0xffff
 -#define SFQ_DEFAULT_HASH_DIVISOR 1024
@@ -28,12 +28,53 @@
  	u8		flags;
  	struct tcf_proto __rcu *filter_list;
  	struct tcf_block *block;
-@@ -754,7 +754,9 @@
+@@ -639,9 +639,10 @@
+ 	unsigned int divisor;
+ 	int perturb_period;
+ 	u8 headdrop;
+-	u8 maxdepth;
++	u16 maxdepth;
+ 	int limit;
+ 	u8 flags;
++	u8 hook_max = 0;
+ 
+ 
+ 	if (opt->nla_len < nla_attr_size(sizeof(*ctl)))
+@@ -694,6 +695,7 @@
+ 	}
+ 	if (ctl_v1) {
+ 		if (ctl_v1->depth)
++			hook_max = ctl_v1->depth == 1 ? 1 : hook_max;
+ 			maxdepth = min_t(u32, ctl_v1->depth, SFQ_MAX_DEPTH);
+ 		if (p) {
+ 			red_set_parms(p,
+@@ -708,9 +710,10 @@
+ 	}
+ 	if (ctl->limit) {
+ 		limit = min_t(u32, ctl->limit, maxdepth * maxflows);
++		hook_max = ctl->limit == 1 ? 1 : hook_max;
+ 		maxflows = min_t(u32, maxflows, limit);
+ 	}
+-	if (limit == 1) {
++	if (limit == 1 && hook_max != 1) {
+ 		sch_tree_unlock(sch);
+ 		kfree(p);
+ 		NL_SET_ERR_MSG_MOD(extack, "invalid limit");
+@@ -723,6 +726,8 @@
+ 	q->headdrop = headdrop;
+ 	q->maxdepth = maxdepth;
+ 	q->maxflows = maxflows;
++	if (hook_max == 1)
++		q->limit = q->maxdepth = SFQ_MAX_DEPTH;
+ 	WRITE_ONCE(q->perturb_period, perturb_period);
+ 	q->quantum = quantum;
+ 	q->flags = flags;
+@@ -797,7 +802,9 @@
  	q->divisor = SFQ_DEFAULT_HASH_DIVISOR;
  	q->maxflows = SFQ_DEFAULT_FLOWS;
  	q->quantum = psched_mtu(qdisc_dev(sch));
 -	q->perturb_period = 0;
-+	q->perturb_period = 225 * HZ;
++	q->perturb_period = 300 * HZ;
 +	q->headdrop = 1;
 +	mod_timer(&q->perturb_timer, jiffies + q->perturb_period);
  	get_random_bytes(&q->perturbation, sizeof(q->perturbation));
