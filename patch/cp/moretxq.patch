@@ -1,0 +1,11 @@
+--- a/include/net/pkt_sched.h	2026-06-09 15:42:43.000000000 +0000
++++ b/include/net/pkt_sched.h	2026-06-17 01:55:46.348053490 +0000
+@@ -10,7 +10,7 @@
+ #include <net/net_namespace.h>
+ #include <uapi/linux/pkt_sched.h>
+ 
+-#define DEFAULT_TX_QUEUE_LEN	1000
++#define DEFAULT_TX_QUEUE_LEN	1920
+ #define STAB_SIZE_LOG_MAX	30
+ 
+ struct qdisc_walker {

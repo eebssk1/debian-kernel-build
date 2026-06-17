@@ -1,0 +1,37 @@
+--- a/kernel/Kconfig.hz	2026-06-17 02:37:54.082103985 +0000
++++ b/kernel/Kconfig.hz	2026-06-17 02:52:12.564485738 +0000
+@@ -24,6 +24,12 @@
+ 	  with lots of processors that may show reduced performance if
+ 	  too many timer interrupts are occurring.
+ 
++	config HZ_175
++		bool "175 HZ"
++	help
++	  175 Hz is a slightly better timer frequency for small VMs within
++	  cloud.
++
+ 	config HZ_250
+ 		bool "250 HZ"
+ 	help
+@@ -32,6 +38,11 @@
+ 	 on SMP and NUMA systems. If you are going to be using NTSC video
+ 	 or multimedia, select 300Hz instead.
+ 
++	config HZ_275
++		bool "275 HZ"
++	help
++	 275 HZ is a better compromise for latency and throuput.
++
+ 	config HZ_300
+ 		bool "300 HZ"
+ 	help
+@@ -58,7 +69,9 @@
+ config HZ
+ 	int
+ 	default 100 if HZ_100
++	default 175 if HZ_175
+ 	default 250 if HZ_250
++	default 275 if HZ_275
+ 	default 300 if HZ_300
+ 	default 500 if HZ_500
+ 	default 1000 if HZ_1000

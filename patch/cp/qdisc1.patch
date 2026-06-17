@@ -1,14 +1,18 @@
---- a/drivers/net/veth.c	2025-04-22 09:25:12.398611699 +0000
-+++ b/drivers/net/veth.c	2025-04-22 09:25:05.118611981 +0000
-@@ -1736,7 +1736,6 @@
+--- a/drivers/net/veth.c	2026-06-17 01:58:34.049160987 +0000
++++ b/drivers/net/veth.c	2026-06-17 02:04:08.548478590 +0000
+@@ -1734,9 +1734,10 @@
+ {
+ 	ether_setup(dev);
  
++	dev->tx_queue_len = 2560;
++
  	dev->priv_flags &= ~IFF_TX_SKB_SHARING;
  	dev->priv_flags |= IFF_LIVE_ADDR_CHANGE;
 -	dev->priv_flags |= IFF_NO_QUEUE;
  	dev->priv_flags |= IFF_PHONY_HEADROOM;
- 
- 	dev->netdev_ops = &veth_netdev_ops;
-@@ -1855,6 +1854,7 @@
+ 	dev->priv_flags |= IFF_DISABLE_NETPOLL;
+ 	dev->lltx = true;
+@@ -1846,6 +1847,7 @@
  
  	peer = rtnl_create_link(peer_net, ifname, name_assign_type,
  				&veth_link_ops, tbp, extack);
