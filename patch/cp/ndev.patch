@@ -1,0 +1,22 @@
+--- a/net/core/hotdata.c	2026-06-19 08:02:36.275647682 +0000
++++ b/net/core/hotdata.c	2026-06-19 08:03:22.836646543 +0000
+@@ -11,16 +11,16 @@
+ 	.offload_base = LIST_HEAD_INIT(net_hotdata.offload_base),
+ 	.gro_normal_batch = 8,
+ 
+-	.netdev_budget = 300,
++	.netdev_budget = 520,
+ 	/* Must be at least 2 jiffes to guarantee 1 jiffy timeout */
+ 	.netdev_budget_usecs = 2 * USEC_PER_SEC / HZ,
+ 
+ 	.tstamp_prequeue = 1,
+-	.max_backlog = 1000,
++	.max_backlog = 1680,
+ 	.dev_tx_weight = 64,
+ 	.dev_rx_weight = 64,
+ 	.sysctl_max_skb_frags = MAX_SKB_FRAGS,
+-	.sysctl_skb_defer_max = 64,
++	.sysctl_skb_defer_max = 80,
+ 	.sysctl_mem_pcpu_rsv = SK_MEMORY_PCPU_RESERVE
+ };
+ EXPORT_SYMBOL(net_hotdata);

@@ -81,10 +81,10 @@
 +REAL_FUNCTION_ALIGNMENT = $(CONFIG_FUNCTION_ALIGNMENT)
 +endif
 +KBUILD_CFLAGS += -falign-functions=$(REAL_FUNCTION_ALIGNMENT)
-+ifeq ($(shell expr $(CONFIG_FUNCTION_ALIGNMENT) \> 8), 1)
++ifeq ($(shell expr $(CONFIG_FUNCTION_ALIGNMENT) \>= 8), 1)
 +KBUILD_CFLAGS += $(call cc-option, -fmin-function-alignment=8)
 +endif
-+ifeq ($(shell expr $(CONFIG_FUNCTION_ALIGNMENT) \> 23), 1)
++ifeq ($(shell expr $(CONFIG_FUNCTION_ALIGNMENT) \>= 24), 1)
 +KBUILD_CFLAGS += $(call cc-option, -flimit-function-alignment)
 +endif
  endif
