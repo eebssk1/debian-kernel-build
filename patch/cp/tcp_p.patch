@@ -1,0 +1,67 @@
+--- a/net/ipv4/tcp_ipv4.c	2026-06-19 06:43:47.621409544 +0000
++++ b/net/ipv4/tcp_ipv4.c	2026-06-19 07:10:32.148444865 +0000
+@@ -3572,7 +3572,7 @@
+ 
+ 	net->ipv4.tcp_death_row.hashinfo = hinfo;
+ 	net->ipv4.tcp_death_row.sysctl_max_tw_buckets = ehash_entries / 2;
+-	net->ipv4.sysctl_max_syn_backlog = max(128U, ehash_entries / 128);
++	net->ipv4.sysctl_max_syn_backlog = max(274U, ehash_entries / 92);
+ }
+ 
+ static int __net_init tcp_sk_init(struct net *net)
+@@ -3598,9 +3598,9 @@
+ 	net->ipv4.sysctl_tcp_reordering = TCP_FASTRETRANS_THRESH;
+ 	net->ipv4.sysctl_tcp_retries1 = TCP_RETR1;
+ 	net->ipv4.sysctl_tcp_retries2 = TCP_RETR2;
+-	net->ipv4.sysctl_tcp_orphan_retries = 0;
++	net->ipv4.sysctl_tcp_orphan_retries = 3;
+ 	net->ipv4.sysctl_tcp_fin_timeout = TCP_FIN_TIMEOUT;
+-	net->ipv4.sysctl_tcp_notsent_lowat = UINT_MAX;
++	net->ipv4.sysctl_tcp_notsent_lowat = 144 * 1024;
+ 	net->ipv4.sysctl_tcp_tw_reuse = 2;
+ 	net->ipv4.sysctl_tcp_tw_reuse_delay = 1 * MSEC_PER_SEC;
+ 	net->ipv4.sysctl_tcp_no_ssthresh_metrics_save = 1;
+@@ -3615,7 +3615,7 @@
+ 	net->ipv4.sysctl_tcp_recovery = TCP_RACK_LOSS_DETECTION;
+ 	net->ipv4.sysctl_tcp_slow_start_after_idle = 1; /* By default, RFC2861 behavior.  */
+ 	net->ipv4.sysctl_tcp_retrans_collapse = 1;
+-	net->ipv4.sysctl_tcp_max_reordering = 300;
++	net->ipv4.sysctl_tcp_max_reordering = 400;
+ 	net->ipv4.sysctl_tcp_dsack = 1;
+ 	net->ipv4.sysctl_tcp_app_win = 31;
+ 	net->ipv4.sysctl_tcp_adv_win_scale = 1;
+@@ -3636,9 +3636,9 @@
+ 	net->ipv4.sysctl_tcp_tso_rtt_log = 9;  /* 2^9 = 512 usec */
+ 	net->ipv4.sysctl_tcp_min_rtt_wlen = 300;
+ 	net->ipv4.sysctl_tcp_autocorking = 1;
+-	net->ipv4.sysctl_tcp_invalid_ratelimit = HZ/2;
+-	net->ipv4.sysctl_tcp_pacing_ss_ratio = 200;
+-	net->ipv4.sysctl_tcp_pacing_ca_ratio = 120;
++	net->ipv4.sysctl_tcp_invalid_ratelimit = HZ/3;
++	net->ipv4.sysctl_tcp_pacing_ss_ratio = 215;
++	net->ipv4.sysctl_tcp_pacing_ca_ratio = 132;
+ 	if (net != &init_net) {
+ 		memcpy(net->ipv4.sysctl_tcp_rmem,
+ 		       init_net.ipv4.sysctl_tcp_rmem,
+@@ -3647,9 +3647,9 @@
+ 		       init_net.ipv4.sysctl_tcp_wmem,
+ 		       sizeof(init_net.ipv4.sysctl_tcp_wmem));
+ 	}
+-	net->ipv4.sysctl_tcp_comp_sack_delay_ns = NSEC_PER_MSEC;
+-	net->ipv4.sysctl_tcp_comp_sack_slack_ns = 100 * NSEC_PER_USEC;
+-	net->ipv4.sysctl_tcp_comp_sack_nr = 44;
++	net->ipv4.sysctl_tcp_comp_sack_delay_ns = 13 * NSEC_PER_MSEC / 10;
++	net->ipv4.sysctl_tcp_comp_sack_slack_ns = 122 * NSEC_PER_USEC;
++	net->ipv4.sysctl_tcp_comp_sack_nr = 35;
+ 	net->ipv4.sysctl_tcp_backlog_ack_defer = 1;
+ 	net->ipv4.sysctl_tcp_fastopen = TFO_CLIENT_ENABLE;
+ 	net->ipv4.sysctl_tcp_fastopen_blackhole_timeout = 0;
+@@ -3673,7 +3673,7 @@
+ 
+ 	net->ipv4.sysctl_tcp_syn_linear_timeouts = 4;
+ 	net->ipv4.sysctl_tcp_shrink_window = 0;
+-	net->ipv4.sysctl_tcp_collapse_max_bytes = 0;
++	net->ipv4.sysctl_tcp_collapse_max_bytes = 7549747;
+ 
+ 	net->ipv4.sysctl_tcp_pingpong_thresh = 1;
+ 	net->ipv4.sysctl_tcp_rto_min_us = jiffies_to_usecs(TCP_RTO_MIN);

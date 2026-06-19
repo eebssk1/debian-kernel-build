@@ -52,7 +52,7 @@
  enum bbr_pacing_gain_phase {
  	BBR_BW_PROBE_UP		= 0,  /* push up inflight to probe for bw/vol */
 @@ -235,26 +235,30 @@
- 	BBR_BW_PROBE_REFILL	= 3,  /* v2: refill the pipe again to 100% */
+ 	BBR_BW_PROBE_REFILL	= 3,  /* refill the pipe again to 100% */
  };
  
 +/* Avoid over pacing when app-limited in STARTUP, but still try to probe for more bandwidth.
@@ -185,7 +185,7 @@
  
  /* Use fast path if app-limited, no loss/ECN, and target cwnd was reached? */
  static const bool bbr_fast_path = true;
-@@ -466,10 +470,17 @@
+@@ -469,10 +473,17 @@
  	struct bbr *bbr = inet_csk_ca(sk);
  	unsigned long rate = bbr_bw_to_pacing_rate(sk, bw, gain);
  
@@ -204,26 +204,46 @@
  }
  
  /* Return the number of segments BBR would like in a TSO/GSO skb, given a
-@@ -590,6 +601,26 @@
+@@ -576,6 +587,7 @@
+ 	struct bbr *bbr = inet_csk_ca(sk);
+ 	u32 bdp;
+ 	u64 w;
++	u32 minrtt = bbr->min_rtt_us;
+ 
+ 	/* If we've never had a valid RTT sample, cap cwnd at the initial
+ 	 * default. This should only happen when the connection is not using TCP
+@@ -583,16 +595,36 @@
+ 	 * ACKed so far. In this case, an RTO can cut cwnd to 1, in which
+ 	 * case we need to slow-start up toward something safe: initial cwnd.
+ 	 */
+-	if (unlikely(bbr->min_rtt_us == ~0U))	 /* no valid RTT samples yet? */
++	if (unlikely(minrtt == ~0U))	 /* no valid RTT samples yet? */
+ 		return bbr->init_cwnd;  /* be safe: cap at initial cwnd */
+ 
+-	w = (u64)bw * bbr->min_rtt_us;
++	w = (u64)bw * minrtt;
+ 
+ 	/* Apply a gain to the given value, remove the BW_SCALE shift, and
+ 	 * round the value up to avoid a negative feedback loop.
  	 */
  	bdp = (((w * gain) >> BBR_SCALE) + BW_UNIT - 1) / BW_UNIT;
  
-+	if(bbr->min_rtt_us >= 180 * USEC_PER_MSEC) {
++	if(minrtt >= 180 * USEC_PER_MSEC) {
 +			bdp += 8;
 +			bdp += bw >= 44738 ? 6 : 3;
-+	} else if(bbr->min_rtt_us >= 140 * USEC_PER_MSEC) {
++	} else if(minrtt >= 140 * USEC_PER_MSEC) {
 +			bdp += 6;
 +			bdp += bw >= 44738 ? 5 : 2;
-+	} else if(bbr->min_rtt_us >= 90 * USEC_PER_MSEC) {
++	} else if(minrtt >= 90 * USEC_PER_MSEC) {
 +			bdp += 5;
 +			bdp += bw >= 44738 ? 4 : 1;
-+	} else if(bbr->min_rtt_us >= 31 * USEC_PER_MSEC) {
++	} else if(minrtt >= 31 * USEC_PER_MSEC) {
 +			bdp += 4;
 +			bdp += bw >= 44738 ? 3 : 1;
-+	} else if(bbr->min_rtt_us >= 16 * USEC_PER_MSEC) {
++	} else if(minrtt >= 16 * USEC_PER_MSEC) {
 +			bdp += 2;
 +			bdp += bw >= 44738 ? 2 : 0;
-+	} else if(bbr->min_rtt_us >= 6 * USEC_PER_MSEC) {
++	} else if(minrtt >= 6 * USEC_PER_MSEC) {
 +			bdp += 1;
 +			bdp += bw >= 44738 ? 1 : 0;
 +	}
@@ -231,7 +251,7 @@
  	return bdp;
  }
  
-@@ -712,18 +743,27 @@
+@@ -715,18 +747,27 @@
  	/* Update cwnd and enable fast path if cwnd reaches target_cwnd. */
  	bbr->try_fast_path = 0;
  	if (bbr_full_bw_reached(sk)) { /* only cut cwnd if we filled the pipe */
@@ -261,7 +281,7 @@
  done:
  	tcp_snd_cwnd_set(tp, min(cwnd, tp->snd_cwnd_clamp));  /* global cap */
  	if (bbr->mode == BBR_PROBE_RTT)  /* drain queue, refresh min_rtt */
-@@ -942,10 +982,11 @@
+@@ -945,10 +986,11 @@
  static void bbr_update_gains(struct sock *sk)
  {
  	struct bbr *bbr = inet_csk_ca(sk);
@@ -270,11 +290,11 @@
  	switch (bbr->mode) {
  	case BBR_STARTUP:
 -		bbr->pacing_gain = bbr_param(sk, startup_pacing_gain);
-+		bbr->pacing_gain = READ_ONCE(tp->app_limited) ? bbr_param(sk, limited_pacing_gain) : bbr_param(sk, startup_pacing_gain);
++		bbr->pacing_gain = tp->app_limited ? bbr_param(sk, limited_pacing_gain) : bbr_param(sk, startup_pacing_gain);
  		bbr->cwnd_gain	 = bbr_param(sk, startup_cwnd_gain);
  		break;
  	case BBR_DRAIN:
-@@ -1078,8 +1119,8 @@
+@@ -1081,8 +1123,8 @@
  	/* See if we should use ECN sender logic for this connection. */
  	if (!bbr->ecn_eligible && bbr_can_use_ecn(sk) &&
  	    !!bbr_param(sk, ecn_factor) &&
