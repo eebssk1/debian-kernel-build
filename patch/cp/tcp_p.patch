@@ -30,7 +30,7 @@
  	net->ipv4.sysctl_tcp_dsack = 1;
  	net->ipv4.sysctl_tcp_app_win = 31;
  	net->ipv4.sysctl_tcp_adv_win_scale = 1;
-@@ -3636,9 +3636,9 @@
+@@ -3636,9 +3636,10 @@
  	net->ipv4.sysctl_tcp_tso_rtt_log = 9;  /* 2^9 = 512 usec */
  	net->ipv4.sysctl_tcp_min_rtt_wlen = 300;
  	net->ipv4.sysctl_tcp_autocorking = 1;
@@ -40,10 +40,11 @@
 +	net->ipv4.sysctl_tcp_invalid_ratelimit = HZ/3;
 +	net->ipv4.sysctl_tcp_pacing_ss_ratio = 215;
 +	net->ipv4.sysctl_tcp_pacing_ca_ratio = 132;
++	net->ipv4.sysctl_tcp_thin_linear_timeouts = 1;
  	if (net != &init_net) {
  		memcpy(net->ipv4.sysctl_tcp_rmem,
  		       init_net.ipv4.sysctl_tcp_rmem,
-@@ -3647,9 +3647,9 @@
+@@ -3647,9 +3648,9 @@
  		       init_net.ipv4.sysctl_tcp_wmem,
  		       sizeof(init_net.ipv4.sysctl_tcp_wmem));
  	}
@@ -56,7 +57,7 @@
  	net->ipv4.sysctl_tcp_backlog_ack_defer = 1;
  	net->ipv4.sysctl_tcp_fastopen = TFO_CLIENT_ENABLE;
  	net->ipv4.sysctl_tcp_fastopen_blackhole_timeout = 0;
-@@ -3673,7 +3673,7 @@
+@@ -3673,7 +3674,7 @@
  
  	net->ipv4.sysctl_tcp_syn_linear_timeouts = 4;
  	net->ipv4.sysctl_tcp_shrink_window = 0;
