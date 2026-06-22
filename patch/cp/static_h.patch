@@ -1,0 +1,111 @@
+diff --git a/Makefile b/Makefile
+index f520fc513..31a837f38 100644
+--- a/Makefile
++++ b/Makefile
+@@ -468,6 +468,23 @@ KBUILD_USERHOSTCFLAGS := -Wall -Wmissing-prototypes -Wstrict-prototypes \
+ KBUILD_USERCFLAGS  := $(KBUILD_USERHOSTCFLAGS) $(USERCFLAGS)
+ KBUILD_USERLDFLAGS := $(USERLDFLAGS)
+ 
++HAVE_PKGCONFIG := 1
++ifeq ($(shell command -v $(HOSTPKG_CONFIG) 2> /dev/null),)
++HAVE_PKGCONFIG := 0
++endif
++
++STATIC_FLG :=
++STATIC_FLG_F :=
++ifeq ($(FORCE_STATIC_HOST), 1)
++ifeq ($(HAVE_PKGCONFIG), 1)
++STATIC_FLG := -static
++STATIC_FLG_F := -$(STATIC_FLG)
++$(warning TRY TO BUILD HOST BIN AS STATIC)
++else
++$(warning TRY TO BUILD HOST BIN AS STATIC BUT NO PKGCONF, IGNORED)
++endif
++endif
++
+ # These flags apply to all Rust code in the tree, including the kernel and
+ # host programs.
+ export rust_common_flags := --edition=2021 \
+@@ -500,13 +517,13 @@ export rust_common_flags := --edition=2021 \
+ 			    -Wrustdoc::missing_crate_level_docs \
+ 			    -Wrustdoc::unescaped_backticks
+ 
+-KBUILD_HOSTCFLAGS   := $(KBUILD_USERHOSTCFLAGS) $(HOST_LFS_CFLAGS) \
++KBUILD_HOSTCFLAGS   := -Os $(KBUILD_USERHOSTCFLAGS) $(HOST_LFS_CFLAGS) \
+ 		       $(HOSTCFLAGS) -I $(srctree)/scripts/include
+-KBUILD_HOSTCXXFLAGS := -Wall -O2 $(HOST_LFS_CFLAGS) $(HOSTCXXFLAGS) \
++KBUILD_HOSTCXXFLAGS := -Wall -Os $(HOST_LFS_CFLAGS) $(HOSTCXXFLAGS) \
+ 		       -I $(srctree)/scripts/include
+ KBUILD_HOSTRUSTFLAGS := $(rust_common_flags) -O -Cstrip=debuginfo \
+ 			-Zallow-features= $(HOSTRUSTFLAGS)
+-KBUILD_HOSTLDFLAGS  := $(HOST_LFS_LDFLAGS) $(HOSTLDFLAGS)
++KBUILD_HOSTLDFLAGS  := $(HOST_LFS_LDFLAGS) $(STATIC_FLG) $(HOSTLDFLAGS)
+ KBUILD_HOSTLDLIBS   := $(HOST_LFS_LIBS) $(HOSTLDLIBS)
+ KBUILD_PROCMACROLDFLAGS := $(or $(PROCMACROLDFLAGS),$(KBUILD_HOSTLDFLAGS))
+ 
+@@ -629,7 +646,7 @@ export RUSTC_BOOTSTRAP := 1
+ # Allows finding `.clippy.toml` in out-of-srctree builds.
+ export CLIPPY_CONF_DIR := $(srctree)
+ 
+-export ARCH SRCARCH CONFIG_SHELL BASH HOSTCC KBUILD_HOSTCFLAGS CROSS_COMPILE LD CC HOSTPKG_CONFIG
++export ARCH SRCARCH CONFIG_SHELL BASH HOSTCC KBUILD_HOSTCFLAGS CROSS_COMPILE LD CC HOSTPKG_CONFIG STATIC_FLG STATIC_FLG_F
+ export RUSTC RUSTDOC RUSTFMT RUSTC_OR_CLIPPY_QUIET RUSTC_OR_CLIPPY BINDGEN
+ export HOSTRUSTC KBUILD_HOSTRUSTFLAGS
+ export CPP AR NM STRIP OBJCOPY OBJDUMP READELF PAHOLE RESOLVE_BTFIDS LEX YACC AWK INSTALLKERNEL
+diff --git a/certs/Makefile b/certs/Makefile
+index f6fa4d8d7..ef19f1d6f 100644
+--- a/certs/Makefile
++++ b/certs/Makefile
+@@ -84,5 +84,5 @@ targets += x509_revocation_list
+ 
+ hostprogs := extract-cert
+ 
+-HOSTCFLAGS_extract-cert.o = $(shell $(HOSTPKG_CONFIG) --cflags libcrypto 2> /dev/null) -I$(srctree)/scripts
+-HOSTLDLIBS_extract-cert = $(shell $(HOSTPKG_CONFIG) --libs libcrypto 2> /dev/null || echo -lcrypto)
++HOSTCFLAGS_extract-cert.o = $(shell $(HOSTPKG_CONFIG) $(STATIC_FLG_F) --cflags libcrypto 2> /dev/null) -I$(srctree)/scripts
++HOSTLDLIBS_extract-cert = $(shell $(HOSTPKG_CONFIG) $(STATIC_FLG_F) --libs libcrypto 2> /dev/null || echo -lcrypto)
+diff --git a/scripts/Makefile b/scripts/Makefile
+index 46f860529..ab9f2bed2 100644
+--- a/scripts/Makefile
++++ b/scripts/Makefile
+@@ -28,8 +28,8 @@ rustdoc_test_gen-rust := y
+ HOSTCFLAGS_sorttable.o = -I$(srctree)/tools/include
+ HOSTLDLIBS_sorttable = -lpthread
+ HOSTCFLAGS_asn1_compiler.o = -I$(srctree)/include
+-HOSTCFLAGS_sign-file.o = $(shell $(HOSTPKG_CONFIG) --cflags libcrypto 2> /dev/null)
+-HOSTLDLIBS_sign-file = $(shell $(HOSTPKG_CONFIG) --libs libcrypto 2> /dev/null || echo -lcrypto)
++HOSTCFLAGS_sign-file.o = $(shell $(HOSTPKG_CONFIG) $(STATIC_FLG_F) --cflags libcrypto 2> /dev/null)
++HOSTLDLIBS_sign-file = $(shell $(HOSTPKG_CONFIG) $(STATIC_FLG_F) --libs libcrypto 2> /dev/null || echo -lcrypto)
+ 
+ ifdef CONFIG_UNWINDER_ORC
+ ifeq ($(ARCH),x86_64)
+diff --git a/tools/bpf/resolve_btfids/Makefile b/tools/bpf/resolve_btfids/Makefile
+index ce1b556df..05dc65d7d 100644
+--- a/tools/bpf/resolve_btfids/Makefile
++++ b/tools/bpf/resolve_btfids/Makefile
+@@ -62,8 +62,8 @@ $(BPFOBJ): $(wildcard $(LIBBPF_SRC)/*.[ch] $(LIBBPF_SRC)/Makefile) | $(LIBBPF_OU
+ 		    DESTDIR=$(LIBBPF_DESTDIR) $(HOST_OVERRIDES) prefix= subdir= \
+ 		    $(abspath $@) install_headers
+ 
+-LIBELF_FLAGS := $(shell $(HOSTPKG_CONFIG) libelf --cflags 2>/dev/null)
+-LIBELF_LIBS  := $(shell $(HOSTPKG_CONFIG) libelf --libs 2>/dev/null || echo -lelf)
++LIBELF_FLAGS := $(shell $(HOSTPKG_CONFIG) libelf $(STATIC_FLG_F) --cflags 2>/dev/null)
++LIBELF_LIBS  := $(shell $(HOSTPKG_CONFIG) libelf $(STATIC_FLG_F) --libs 2>/dev/null || echo -lelf)
+ 
+ HOSTCFLAGS_resolve_btfids += -g \
+           -I$(srctree)/tools/include \
+diff --git a/tools/objtool/Makefile b/tools/objtool/Makefile
+index b436656cd..e89143b8e 100644
+--- a/tools/objtool/Makefile
++++ b/tools/objtool/Makefile
+@@ -20,8 +20,8 @@ LIBSUBCMD = $(LIBSUBCMD_OUTPUT)/libsubcmd.a
+ OBJTOOL    := $(OUTPUT)objtool
+ OBJTOOL_IN := $(OBJTOOL)-in.o
+ 
+-LIBELF_FLAGS := $(shell $(HOSTPKG_CONFIG) libelf --cflags 2>/dev/null)
+-LIBELF_LIBS  := $(shell $(HOSTPKG_CONFIG) libelf --libs 2>/dev/null || echo -lelf)
++LIBELF_FLAGS := $(shell $(HOSTPKG_CONFIG) libelf $(STATIC_FLG_F) --cflags 2>/dev/null)
++LIBELF_LIBS  := $(shell $(HOSTPKG_CONFIG) libelf $(STATIC_FLG_F) --libs 2>/dev/null || echo -lelf)
+ 
+ all: $(OBJTOOL)
+ 

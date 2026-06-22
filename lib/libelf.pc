@@ -1,0 +1,10 @@
+libdir=${pcfiledir}
+
+Name: libelf
+Description: elfutils libelf library to read and write ELF files
+Version: 0.195
+URL: http://elfutils.org/
+
+Libs: -L${libdir} -lelf
+
+Requires.private: zlib libzstd

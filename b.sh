@@ -118,6 +118,9 @@ export CC=clang
 export LLVM=1
 fi
 
+export PKG_CONFIG_PATH=$PWD/../lib
+export FORCE_STATIC_HOST=1
+
 if [ "x$(which ccache)" != "x" ]; then
 echo "Found ccache !"
 export CCACHE_SLOPPINESS="locale,time_macros,include_file_mtime,file_stat_matches"
