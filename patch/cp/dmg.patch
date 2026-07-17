@@ -5,7 +5,7 @@
  	drm_fb_helper_add_damage_clip(helper, x, y, width, height);
  
 -	schedule_work(&helper->damage_work);
-+	queue_work(system_long_wq, &helper->damage_work);
++	queue_work(system_unbound_wq, &helper->damage_work);
  }
  
  /*

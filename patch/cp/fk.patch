@@ -1,0 +1,11 @@
+--- a/kernel/fork.c	2026-07-17 02:27:58.995775736 +0000
++++ b/kernel/fork.c	2026-07-17 02:30:35.086769697 +0000
+@@ -1171,7 +1171,7 @@
+ {
+ 	if (atomic_dec_and_test(&mm->mm_users)) {
+ 		INIT_WORK(&mm->async_put_work, mmput_async_fn);
+-		schedule_work(&mm->async_put_work);
++		queue_work(system_long_wq, &mm->async_put_work);
+ 	}
+ }
+ EXPORT_SYMBOL_GPL(mmput_async);
