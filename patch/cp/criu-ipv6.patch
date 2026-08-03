@@ -1,0 +1,39 @@
+From: Kilo <kilo@local>
+Date: Sun, 3 Aug 2026 06:15:00 +0000
+Subject: [PATCH 1/2] ipv6: use RTPROT_RA instead of RTF_ADDRCONF in rt6_get_dflt_router
+
+rt6_get_dflt_router currently requires both RTF_ADDRCONF and RTF_DEFAULT
+flags to identify RA-added default routes.  After CRIU checkpoint/restore,
+the route protocol (RTPROT_RA) is preserved but the RTF_ADDRCONF flag
+may not be, causing the lookup to miss the existing route.
+
+When ndisc_router_discovery receives a new RA, rt6_get_dflt_router
+returns NULL, so the code attempts to add a new default route via
+rt6_add_dflt_router.  ip6_route_add then fails with -EEXIST because the
+route already exists in the FIB table, logging:
+
+  ICMPv6: RA: ndisc_router_discovery failed to add default route
+
+Use the protocol field (RTPROT_RA) instead of RTF_ADDRCONF to identify
+RA-added routes.  The protocol field unambiguously identifies RA routes
+and is correctly preserved by CRIU.
+
+Signed-off-by: Kilo <kilo@local>
+---
+ net/ipv6/route.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+diff --git a/net/ipv6/route.c b/net/ipv6/route.c
+index a1b0f8e..b2c3d4f 100644
+--- a/net/ipv6/route.c
++++ b/net/ipv6/route.c
+@@ -4454,7 +4454,8 @@ struct fib6_info *rt6_get_dflt_router(struct net *net,
+ 
+ 		nh = rt->fib6_nh;
+ 		if (dev == nh->fib_nh_dev &&
+-		    ((rt->fib6_flags & (RTF_ADDRCONF | RTF_DEFAULT)) == (RTF_ADDRCONF | RTF_DEFAULT)) &&
++		    (rt->fib6_flags & RTF_DEFAULT) &&
++		    rt->fib6_protocol == RTPROT_RA &&
+ 		    ipv6_addr_equal(&nh->fib_nh_gw6, addr))
+ 			break;
+ 	}
