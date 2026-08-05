@@ -1,24 +1,34 @@
 From 467904416b3786c9f2b29ca683d36cb2523ae7ce Mon Sep 17 00:00:00 2001
 From: Colin Ian King <colin.i.king@intel.com>
 Date: Thu, 17 Oct 2024 16:29:50 +0100
-Subject: [PATCH] handle sched_yield gracefully when being hammered
+Subject: [PATCH] rate limit sched_yield to a fixed 1ms window
 
-Some misguided apps hammer sched_yield() in a tight loop (they should be using futexes instead)
-which causes massive lock contention even if there is little work to do or to yield to.
-rare limit yielding since the base scheduler does a pretty good job already about just
-running the right things
+Some misguided apps hammer sched_yield() in a tight loop (they should be
+using futexes instead) which causes massive lock contention even if there
+is little work to do or to yield to.
+
+Modified from the original jiffies-based version: rate limit on a fixed
+1ms window via local_clock(), so behavior no longer depends on HZ (the
+original one-jiffy window was 5.7ms at HZ=175, making sched_yield() a
+no-op for well-behaved waiters for too long).
 
 Signed-off-by: Colin Ian King <colin.i.king@intel.com>
 ---
- kernel/sched/syscalls.c | 12 ++++++++++++
- 1 file changed, 12 insertions(+)
+ kernel/sched/syscalls.c | 14 ++++++++++++++
+ 1 file changed, 14 insertions(+)
 
-diff --git a/kernel/sched/syscalls.c b/kernel/sched/syscalls.c
-index ae1b42775ef9..441ac65f4f15 100644
 --- a/kernel/sched/syscalls.c
 +++ b/kernel/sched/syscalls.c
-@@ -1456,10 +1456,24 @@
- */
+@@ -8,6 +8,7 @@
+  *  Copyright (C) 1998-2024  Ingo Molnar, Red Hat
+  */
+ #include <linux/sched.h>
++#include <linux/sched/clock.h>
+ #include <linux/cpuset.h>
+ #include <linux/sched/debug.h>
+ 
+@@ -1364,10 +1365,28 @@
+  */
  __read_mostly int sysctl_sched_yield_type = 2;
  
 +static DEFINE_PER_CPU(unsigned long, last_yield);
@@ -28,19 +38,23 @@ index ae1b42775ef9..441ac65f4f15 100644
  	struct rq_flags rf;
  	struct rq *rq;
 +	unsigned long l_yield = this_cpu_read(last_yield);
-+	unsigned long cur_jif;
++	unsigned long cur_ns;
 +
 +	cond_resched();
 +
-+	/* rate limit yielding to something sensible */
-+	cur_jif = READ_ONCE(jiffies);
++	/* Rate limit yielding to 1 per ms, a fixed window independent of HZ.
++	 * Keeps the original anti-hammering protection (millions of
++	 * sched_yield() calls per second) without starving well-behaved
++	 * yield-based waiters for up to a full jiffy (up to 5.7ms at HZ=175).
++	 */
++	cur_ns = local_clock();
 +
-+	if (unlikely(!time_after(cur_jif, l_yield)))
++	if (unlikely(cur_ns - l_yield < 1000000UL))
 +		return;
 +
-+	this_cpu_write(last_yield, cur_jif);
++	this_cpu_write(last_yield, cur_ns);
  
- 	rq = this_rq_lock_irq(&rf);
- 
+ 	if (!sysctl_sched_yield_type)
+ 		return;
 -- 
 2.46.2

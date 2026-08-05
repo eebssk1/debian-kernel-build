@@ -7,14 +7,16 @@ Add module.sig_unenforce boot parameter to allow loading unsigned kernel
 modules. Parameter is only effective if CONFIG_MODULE_SIG_FORCE is
 enabled and system is *not* SecureBooted.
 
+Removed the unused extern struct boot_params declaration.
+
 Signed-off-by: Brett T. Warden <brett.t.warden@intel.com>
 Signed-off-by: Miguel Bernal Marin <miguel.bernal.marin@linux.intel.com>
 ---
- kernel/module.c | 20 ++++++++++++++++++++
- 1 file changed, 20 insertions(+)
+ kernel/module/signing.c | 19 +++++++++++++++++++
+ 1 file changed, 19 insertions(+)
 
---- linux-5.19.1/kernel/module/signing.c~	2022-08-11 11:22:05.000000000 +0000
-+++ linux-5.19.1/kernel/module/signing.c	2022-08-11 15:20:18.199749857 +0000
+--- a/kernel/module/signing.c
++++ b/kernel/module/signing.c
 @@ -14,6 +14,8 @@
  #include <linux/security.h>
  #include <crypto/public_key.h>
@@ -24,19 +26,17 @@ Signed-off-by: Miguel Bernal Marin <miguel.bernal.marin@linux.intel.com>
  #include "internal.h"
  
  #undef MODULE_PARAM_PREFIX
-@@ -21,6 +23,11 @@
+@@ -21,6 +23,9 @@
  
  static bool sig_enforce = IS_ENABLED(CONFIG_MODULE_SIG_FORCE);
  module_param(sig_enforce, bool_enable_only, 0644);
 +/* Allow disabling module signature requirement by adding boot param */
 +static bool sig_unenforce = false;
 +module_param(sig_unenforce, bool_enable_only, 0644);
-+
-+extern struct boot_params boot_params;
  
  /*
   * Export sig_enforce kernel cmdline parameter to allow other subsystems rely
-@@ -28,6 +35,8 @@
+@@ -28,6 +33,8 @@
   */
  bool is_module_sig_enforced(void)
  {

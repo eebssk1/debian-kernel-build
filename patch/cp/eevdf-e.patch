@@ -23,10 +23,9 @@ index 3e2005e9e..589ab29cb 100644
  	int				depth;
  	struct sched_entity		*parent;
 diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index 1574c960e..2c9fcacbf 100644
 --- a/kernel/sched/fair.c
 +++ b/kernel/sched/fair.c
-@@ -81,6 +81,10 @@ static unsigned int normalized_sysctl_sched_base_slice	= 700000ULL;
+@@ -81,6 +81,23 @@
  
  __read_mostly unsigned int sysctl_sched_migration_cost	= 500000UL;
  
@@ -34,16 +33,26 @@ index 1574c960e..2c9fcacbf 100644
 +__read_mostly unsigned int sysctl_sched_burst_penalty_nice_strict = 1;
 +__read_mostly unsigned int sysctl_sched_burst_penalty_relief = 4;
 +
++/*
++ * Wakeup-burst penalty: a task that wakes very frequently while using
++ * little CPU (e.g. a hammering yield/futex loop) is pushed back on the
++ * EEVDF lag scale instead of being granted the full sleep benefit.
++ * wakeup_avg is a PELT-decayed wakeup rate: each wakeup adds 1024, the
++ * PELT half-life is 24ms and wakeup_avg = wakeup_sum / divider, so
++ * wakeup_avg ~= sustained wakeup rate in thousands per second.
++ * The threshold punishes ~2k+ wakeups/sec; UTIL_LOW_THRESHOLD keeps
++ * busy tasks (real work) out of the penalty path. Tune via sysctl.
++ */
++#define WAKEUP_PENALTY_THRESHOLD	2
++#define UTIL_LOW_THRESHOLD		76
++
  static int __init setup_sched_thermal_decay_shift(char *str)
  {
  	pr_warn("Ignoring the deprecated sched_thermal_decay_shift= option\n");
-@@ -5279,6 +5283,40 @@ place_entity(struct cfs_rq *cfs_rq, struct sched_entity *se, int flags)
+@@ -5286,6 +5303,37 @@
  		lag = div_s64(lag, load);
  	}
  
-+	#define WAKEUP_PENALTY_THRESHOLD 711
-+	#define UTIL_LOW_THRESHOLD       76
-+
 +	if (unlikely(sysctl_sched_burst_penalty_enable &&
 +	    se->avg.wakeup_avg > WAKEUP_PENALTY_THRESHOLD &&
 +	    se->avg.util_avg < UTIL_LOW_THRESHOLD)) {
@@ -78,17 +87,18 @@ index 1574c960e..2c9fcacbf 100644
  	se->vruntime = vruntime - lag;
  
  	if (se->rel_deadline) {
-@@ -5312,6 +5350,10 @@ enqueue_entity(struct cfs_rq *cfs_rq, struct sched_entity *se, int flags)
+@@ -5319,6 +5367,10 @@
  {
  	bool curr = cfs_rq->curr == se;
  
 +	if (flags & ENQUEUE_WAKEUP) {
-+		se->avg.wakeup_sum += 1008;
++		se->avg.wakeup_sum += 1024;
 +	}
 +
  	/*
  	 * If we're the current task, we must renormalise before calling
  	 * update_curr().
+
 diff --git a/kernel/sched/pelt.c b/kernel/sched/pelt.c
 index fa83bbaf4..655134e3e 100644
 --- a/kernel/sched/pelt.c
