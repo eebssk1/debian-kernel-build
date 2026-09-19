@@ -36,7 +36,7 @@ index f730b6fe94a7..ee0ec4ab7d1c 100644
  
 -	if (!sched_core_enabled(rq))
 +	if (likely(!sched_core_enabled(rq)))
- 		return __pick_next_task(rq, prev, rf);
+ 		return __pick_next_task(rq, rf);
  
  	cpu = cpu_of(rq);
 @@ -8352,7 +8352,7 @@ SYSCALL_DEFINE0(sched_yield)

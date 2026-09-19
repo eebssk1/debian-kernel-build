@@ -73,10 +73,10 @@
  	WRITE_ONCE(q->perturb_period, perturb_period);
  	q->quantum = quantum;
  	q->flags = flags;
-@@ -797,7 +803,9 @@
- 	q->divisor = SFQ_DEFAULT_HASH_DIVISOR;
+@@ -798,7 +804,9 @@
  	q->maxflows = SFQ_DEFAULT_FLOWS;
- 	q->quantum = psched_mtu(qdisc_dev(sch));
+ 	q->quantum = clamp_t(u32, psched_mtu(qdisc_dev(sch)),
+ 			     256, 1 << 20);
 -	q->perturb_period = 0;
 +	q->perturb_period = 300 * HZ;
 +	q->headdrop = 1;
