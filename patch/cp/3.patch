@@ -14,7 +14,7 @@
  #
  ifdef CONFIG_X86_64
 -LDFLAGS_vmlinux += -z max-page-size=0x200000
-+LDFLAGS_vmlinux += -z max-page-size=0x200000 -O3 --relax
++LDFLAGS_vmlinux += -z max-page-size=0x200000 -O3
  endif
  
  
