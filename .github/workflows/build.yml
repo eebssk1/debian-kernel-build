@@ -38,7 +38,9 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: debs_${{ matrix.target }}-${{ matrix.compiler }}
-          path: "*.deb"
+          path: |
+            *.deb
+            nvidia-gsp-*.tgz
       - name: commit compare
         id: cc
         continue-on-error: true
@@ -66,7 +68,7 @@ jobs:
         uses: ncipollo/release-action@v1.14.0
         with:
           allowUpdates: true
-          artifacts: "*.deb"
+          artifacts: ${{ matrix.target == 'server_large' && '*.deb,nvidia-gsp-*.tgz' || '*.deb' }}
           commit: 6
           makeLatest: ${{ matrix.compiler == 'gcc' }} 
           tag: ${{ env.VER }}-${{ matrix.compiler }}

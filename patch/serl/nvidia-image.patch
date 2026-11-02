@@ -1,0 +1,24 @@
+From: serl kernel build
+Subject: [PATCH] builddeb: stage NVIDIA open modules in the serl image
+
+Applied only by b.sh's server_large branch. Keep this in the source script:
+mkdebian deletes and recreates debian/ on every bindeb-pkg invocation.
+
+--- a/scripts/package/builddeb
++++ b/scripts/package/builddeb
+@@ -38,6 +38,12 @@ install_linux_image () {
+-	${MAKE} -f ${srctree}/Makefile INSTALL_MOD_PATH="${pdir}" INSTALL_MOD_STRIP=1 modules_install
+-	rm -f "${pdir}/lib/modules/${KERNELRELEASE}/build"
+-
++	${MAKE} -f ${srctree}/Makefile INSTALL_MOD_PATH="${pdir}" INSTALL_MOD_STRIP=1 modules_install
++	rm -f "${pdir}/lib/modules/${KERNELRELEASE}/build"
++
++	# Stock modules_install must finish before adding external modules.
++	sh "${srctree}/../nvidia-image.sh" "${SERL_NVIDIA_SOURCE:?}" \
++		"${srctree}" "${PWD}" "${pdir}" "${KERNELRELEASE}" "${pname}"
++
++	# No module stripping may follow the helper's explicit signing step.
++
+ 	# Install the kernel
+ 	if [ "${ARCH}" = um ] ; then
+ 		mkdir -p "${pdir}/usr/lib/uml/modules"

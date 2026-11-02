@@ -50,3 +50,8 @@ modules.order
 Module.symvers
 Mkfile.old
 dkms.conf
+
+# NVIDIA source/build tree and lightweight local checks
+/nvidia-src/
+/.tmp/
+/nvidia-gsp-*.tgz

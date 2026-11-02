@@ -128,5 +128,17 @@ export CCACHE_COMPRESSLEVEL=2
 export CC="ccache $CC"
 fi
 
+if [ "$1" = "server_large" ]; then
+# Resolve the newest GitHub tag with matching official standalone GSP firmware.
+# Matching user-space components must still be installed separately.
+mkdir -p ../nvidia-src || exit 1
+SERL_NVIDIA_SOURCE=$(mktemp -d "$PWD/../nvidia-src/build.XXXXXX") || exit 1
+export SERL_NVIDIA_SOURCE
+sh ../nvidia-prepare.sh "$SERL_NVIDIA_SOURCE" || exit 1
+SERL_NVIDIA_VERSION=$(cat "$SERL_NVIDIA_SOURCE/.serl/version") || exit 1
+export SERL_NVIDIA_VERSION
+patch -f -p1 -i ../patch/serl/nvidia-image.patch || exit 128
+fi
+
 make olddefconfig CC="$CC"
 make bindeb-pkg -j3 V=1 CC="$CC"
