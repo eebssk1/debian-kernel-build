@@ -26,6 +26,8 @@ test -f "$nvidia/COPYING"
 # Keep KCFLAGS for the kernel interface, not as CFLAGS for OS-agnostic objects.
 unset KERNELRELEASE KBUILD_EXTMOD KBUILD_OUTPUT KBUILD_SRC
 unset srctree objtree src obj MAKEFLAGS MFLAGS MAKEOVERRIDES
+# Force the next kbuild entry to initialize objtree and parse NVIDIA's M=.
+unset sub_make_done
 unset KBUILD_CFLAGS KBUILD_CPPFLAGS KBUILD_AFLAGS KBUILD_LDFLAGS
 
 if enabled CONFIG_CC_IS_CLANG; then
@@ -109,6 +111,15 @@ firmware="$nvidia/.serl/gsp-root"
 test "$(cat "$nvidia/.serl/version")" = "$version"
 printf 'NVIDIA version: %s\nKernel release: %s\n' "$version" "$release" \
     > "$firmware/usr/share/doc/firmware-nvidia-gsp/serl-build-info"
-tar -czf "$nvidia/.serl/gsp.tgz" -C "$firmware" .
+# Omit shared parent directories (notably /lib on merged-/usr systems).
+set -- usr/share/doc/firmware-nvidia-gsp
+for base in lib/firmware usr/lib/firmware; do
+    if [ -d "$firmware/$base/nvidia/$version" ]; then
+        set -- "$@" "$base/nvidia/$version"
+    fi
+done
+# Normalize archive headers only: directories 0755, regular files 0644, root.
+tar --owner=0 --group=0 --numeric-owner --mode='u=rw,go=r,a+X' \
+    -czf "$nvidia/.serl/gsp.tgz" -C "$firmware" "$@"
 mv "$nvidia/.serl/gsp.tgz" "$output/../nvidia-gsp-$version-$release.tgz"
 echo "Staged NVIDIA $version modules for $release in $package"
