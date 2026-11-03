@@ -15,7 +15,7 @@ jobs:
     strategy:
       matrix:
         compiler: [llvm, gcc]
-        target: [desktop, server_large, server_small, server_small_2, server_small_a, server_small_g ]
+        target: [desktop, server_large, server_large_plain, server_small, server_small_2, server_small_a, server_small_g ]
         exclude:
           - target: server_small_a
             compiler: llvm
@@ -40,7 +40,7 @@ jobs:
           name: debs_${{ matrix.target }}-${{ matrix.compiler }}
           path: |
             *.deb
-            nvidia-gsp-*.tgz
+            ${{ matrix.target == 'server_large' && 'nvidia-gsp-*.tgz' || '' }}
       - name: commit compare
         id: cc
         continue-on-error: true

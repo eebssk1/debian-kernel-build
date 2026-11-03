@@ -84,9 +84,13 @@ fi
 if [ "$1" = "desktop" ]; then
 export KCFLAGS="$KCFLAGS -mtune=skylake"
 cp ../config_desk .config || exit 1
-elif [ "$1" = "server_large" ]; then
+elif [ "$1" = "server_large" ] || [ "$1" = "server_large_plain" ]; then
 export KCFLAGS="$KCFLAGS -mtune=broadwell"
 cp ../config_serl .config || exit 1
+if [ "$1" = "server_large_plain" ]; then
+# Keep the shared serl config unchanged for the NVIDIA-integrated variant.
+./scripts/config --set-str LOCALVERSION "-bro-sl-plain" --module DRM_NOUVEAU || exit 1
+fi
 elif [ "$1" = "server_small" ]; then
 export KCFLAGS="$KCFLAGS -mtune=broadwell"
 cp ../config_serm .config || exit 1
