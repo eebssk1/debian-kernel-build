@@ -133,7 +133,7 @@ export CC="ccache $CC"
 fi
 
 if [ "$1" = "server_large" ]; then
-# Resolve the newest GitHub tag with matching official standalone GSP firmware.
+# Resolve the newest allowed stable 5xx standard release with same-version GSP.
 # Matching user-space components must still be installed separately.
 mkdir -p ../nvidia-src || exit 1
 SERL_NVIDIA_SOURCE=$(mktemp -d "$PWD/../nvidia-src/build.XXXXXX") || exit 1
