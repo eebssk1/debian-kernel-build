@@ -133,8 +133,8 @@ export CC="ccache $CC"
 fi
 
 if [ "$1" = "server_large" ]; then
-# Resolve the newest allowed stable 5xx standard release with same-version GSP.
-# Matching user-space components must still be installed separately.
+# Auto verifies the source tag's same-version official driver; NVIDIA_DRIVER_SERIES=5xx opts into stable 5xx.
+# Install the matching full driver package separately for same-version user-space and GSP firmware.
 mkdir -p ../nvidia-src || exit 1
 SERL_NVIDIA_SOURCE=$(mktemp -d "$PWD/../nvidia-src/build.XXXXXX") || exit 1
 export SERL_NVIDIA_SOURCE

@@ -105,21 +105,4 @@ done
 depmod -b "$package" "$release"
 install -D -m 644 "$nvidia/COPYING" "$package/usr/share/doc/$pname/NVIDIA-COPYING"
 
-# A separate firmware-only archive, with its original installation paths and
-# license. It is not another module package and contains no user-space driver.
-firmware="$nvidia/.serl/gsp-root"
-test "$(cat "$nvidia/.serl/version")" = "$version"
-printf 'NVIDIA version: %s\nKernel release: %s\n' "$version" "$release" \
-    > "$firmware/usr/share/doc/firmware-nvidia-gsp/serl-build-info"
-# Omit shared parent directories (notably /lib on merged-/usr systems).
-set -- usr/share/doc/firmware-nvidia-gsp
-for base in lib/firmware usr/lib/firmware; do
-    if [ -d "$firmware/$base/nvidia/$version" ]; then
-        set -- "$@" "$base/nvidia/$version"
-    fi
-done
-# Normalize archive headers only: directories 0755, regular files 0644, root.
-tar --owner=0 --group=0 --numeric-owner --mode='u=rw,go=r,a+X' \
-    -czf "$nvidia/.serl/gsp.tgz" -C "$firmware" "$@"
-mv "$nvidia/.serl/gsp.tgz" "$output/../nvidia-gsp-$version-$release.tgz"
 echo "Staged NVIDIA $version modules for $release in $package"

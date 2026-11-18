@@ -4,6 +4,15 @@ on:
   push:
     branches: [ "6" ]
   workflow_dispatch:
+    inputs:
+      nvidia_driver_series:
+        description: 'NVIDIA for server_large: auto (including 6xx) or stable 5xx (R595/R580)'
+        type: choice
+        required: true
+        default: auto
+        options:
+          - auto
+          - 5xx
 
 jobs:
   build:
@@ -33,14 +42,14 @@ jobs:
           max-size: "960M"
           key: ${{ matrix.target }}-${{ matrix.compiler }}-612
       - name: build
+        env:
+          NVIDIA_DRIVER_SERIES: ${{ inputs.nvidia_driver_series || 'auto' }}
         run: ./b.sh ${{ matrix.target }} ${{ matrix.compiler }}
       - name: upload
         uses: actions/upload-artifact@v4
         with:
           name: debs_${{ matrix.target }}-${{ matrix.compiler }}
-          path: |
-            *.deb
-            ${{ matrix.target == 'server_large' && 'nvidia-gsp-*.tgz' || '' }}
+          path: '*.deb'
       - name: commit compare
         id: cc
         continue-on-error: true
@@ -68,7 +77,7 @@ jobs:
         uses: ncipollo/release-action@v1.14.0
         with:
           allowUpdates: true
-          artifacts: ${{ matrix.target == 'server_large' && '*.deb,nvidia-gsp-*.tgz' || '*.deb' }}
+          artifacts: '*.deb'
           commit: 6
           makeLatest: ${{ matrix.compiler == 'gcc' }} 
           tag: ${{ env.VER }}-${{ matrix.compiler }}
