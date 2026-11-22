@@ -1,70 +1,96 @@
---- a/net/sched/sch_cake.c	2026-04-29 06:49:15.292587612 +0000
-+++ b/net/sched/sch_cake.c	2026-04-29 06:47:35.923591855 +0000
-@@ -1739,6 +1739,42 @@
+--- a/net/sched/sch_cake.c
++++ b/net/sched/sch_cake.c
+@@ -53,6 +53,7 @@
+ #include <linux/module.h>
+ #include <linux/types.h>
+ #include <linux/kernel.h>
++#include <linux/overflow.h>
+ #include <linux/jiffies.h>
+ #include <linux/string.h>
+ #include <linux/in.h>
+@@ -237,6 +238,7 @@
+ 	u32		buffer_used;
+ 	u32		buffer_max_used;
+ 	u32		buffer_limit;
++	u32		burst_threshold;	/* bytes of backlog in this qdisc */
+ 
+ 	/* indices for dequeue */
+ 	u16		cur_tin;
+@@ -1752,6 +1754,16 @@
  
  static void cake_reconfigure(struct Qdisc *sch);
  
-+static inline bool cake_should_drop_burst(struct sk_buff *skb, struct Qdisc *sch,
-+                                   struct cake_sched_data *q, u32 flow_backlog)
++static bool cake_should_drop_burst(struct Qdisc *sch, const struct sk_buff *skb,
++				   u32 flow_backlog)
 +{
-+	u16 len;
-+	u64 rate_Bps;
-+	u64 dynamic_pressure_bytes;
-+	u32 rtt_us;
-+	const u16 SMALL_PKT_THRESH = 650;
-+	const u16 MAX_STANDARD_MTU = 1536;
-+	const u32 MIN_FLOW_BACKLOG = 10240;
++	struct cake_sched_data *q = qdisc_priv(sch);
++	unsigned int len = qdisc_pkt_len(skb);
 +
-+	if (q->rate_bps == 0) return false;
-+	len = qdisc_pkt_len(skb);
-+	rate_Bps = (u64)(q->rate_bps >> 3);
-+	rtt_us = q->interval / NSEC_PER_USEC; /* target sojourn in ns -> us */
-+
-+	/*
-+	 * Bandwidth-delay product: bytes that could be transmitted in
-+	 * 83% of the configured target interval. If the total qdisc
-+	 * backlog already exceeds this, the flow is building a queue
-+	 * and we drop big packets early to signal congestion.
-+	 *
-+	 * u64 avoids overflow on links >= 4 Gbps.
-+	 */
-+	dynamic_pressure_bytes = rate_Bps * rtt_us / USEC_PER_SEC;
-+	dynamic_pressure_bytes = dynamic_pressure_bytes * 83 / 100;
-+
-+	if ((u64)sch->qstats.backlog > dynamic_pressure_bytes &&
-+	    flow_backlog > MIN_FLOW_BACKLOG &&
-+	    len > SMALL_PKT_THRESH &&
-+	    len <= MAX_STANDARD_MTU) {
-+		return true;
-+	}
-+	return false;
++	return sch->qstats.backlog > q->burst_threshold &&
++	       flow_backlog > 10240 && len > 650 && len <= 1536;
 +}
 +
  static s32 cake_enqueue(struct sk_buff *skb, struct Qdisc *sch,
  			struct sk_buff **to_free)
  {
-@@ -1802,6 +1838,11 @@
+@@ -1816,6 +1828,10 @@
  			cobalt_set_enqueue_time(segs, now);
  			get_cobalt_cb(segs)->adjusted_len = cake_overhead(q,
  									  segs);
-+			if (unlikely(cake_should_drop_burst(segs, sch, q,
-+							    b->backlogs[idx]))) {
++			if (unlikely(cake_should_drop_burst(sch, segs, b->backlogs[idx]))) {
 +				qdisc_drop(segs, sch, to_free);
 +				continue;
 +			}
  			flow_queue_add(flow, segs);
  
- 			sch->q.qlen++;
-@@ -1826,6 +1867,12 @@
+ 			qdisc_qlen_inc(sch);
+@@ -1825,6 +1841,12 @@
+ 			WRITE_ONCE(b->packets, b->packets + 1);
+ 		}
+ 
++		/* Rejected segments already count as drops; nothing was queued. */
++		if (!numsegs) {
++			consume_skb(skb);
++			return NET_XMIT_DROP;
++		}
++
+ 		/* stats */
+ 		qstats_backlog_add(sch, slen);
+ 		q->avg_window_bytes += slen;
+@@ -1840,6 +1862,8 @@
  
  		cobalt_set_enqueue_time(skb, now);
  		get_cobalt_cb(skb)->adjusted_len = cake_overhead(q, skb);
-+
-+		if (unlikely(cake_should_drop_burst(skb, sch, q,
-+						    b->backlogs[idx]))) {
++		if (unlikely(cake_should_drop_burst(sch, skb, b->backlogs[idx])))
 +			return qdisc_drop(skb, sch, to_free);
-+		}
-+
  		flow_queue_add(flow, skb);
  
- 		if (q->ack_filter)
+ 		if (q->config->ack_filter)
+@@ -2579,6 +2603,19 @@
+ 	return 0;
+ }
+ 
++/* 83% of this qdisc's BDP. rate is in B/s and includes any cake_mq adjustment.
++ * An unlimited rate or a threshold beyond the u32 backlog can never trip.
++ */
++static u32 cake_burst_threshold(u64 rate, u32 interval_us)
++{
++	u64 scaled;
++
++	if (!rate || check_mul_overflow(rate, 83ULL * interval_us, &scaled))
++		return U32_MAX;
++
++	return min_t(u64, div_u64(scaled, 100 * USEC_PER_SEC), U32_MAX);
++}
++
+ static void cake_configure_rates(struct Qdisc *sch, u64 rate, bool rate_adjust)
+ {
+ 	u32 mtu = likely(rate_adjust) ? 0 : psched_mtu(qdisc_dev(sch));
+@@ -2618,6 +2655,7 @@
+ 
+ 	qd->rate_ns   = qd->tins[ft].tin_rate_ns;
+ 	qd->rate_shft = qd->tins[ft].tin_rate_shft;
++	qd->burst_threshold = cake_burst_threshold(rate, READ_ONCE(q->interval));
+ }
+ 
+ static void cake_reconfigure(struct Qdisc *sch)

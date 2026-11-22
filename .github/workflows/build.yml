@@ -2,7 +2,7 @@ name: CI
 
 on:
   push:
-    branches: [ "6" ]
+    branches: [ "7" ]
   workflow_dispatch:
     inputs:
       nvidia_driver_series:
@@ -40,7 +40,7 @@ jobs:
         with:
           verbose: 1
           max-size: "960M"
-          key: ${{ matrix.target }}-${{ matrix.compiler }}-612
+          key: ${{ matrix.target }}-${{ matrix.compiler }}-7.3
       - name: build
         env:
           NVIDIA_DRIVER_SERIES: ${{ inputs.nvidia_driver_series || 'auto' }}
@@ -78,6 +78,6 @@ jobs:
         with:
           allowUpdates: true
           artifacts: '*.deb'
-          commit: 6
+          commit: "7"
           makeLatest: ${{ matrix.compiler == 'gcc' }} 
           tag: ${{ env.VER }}-${{ matrix.compiler }}

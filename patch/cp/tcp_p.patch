@@ -1,6 +1,6 @@
---- a/net/ipv4/tcp_ipv4.c	2026-06-19 06:43:47.621409544 +0000
-+++ b/net/ipv4/tcp_ipv4.c	2026-06-19 07:10:32.148444865 +0000
-@@ -3572,7 +3572,7 @@
+--- a/net/ipv4/tcp_ipv4.c
++++ b/net/ipv4/tcp_ipv4.c
+@@ -3432,7 +3432,7 @@
  
  	net->ipv4.tcp_death_row.hashinfo = hinfo;
  	net->ipv4.tcp_death_row.sysctl_max_tw_buckets = ehash_entries / 2;
@@ -9,7 +9,7 @@
  }
  
  static int __net_init tcp_sk_init(struct net *net)
-@@ -3598,9 +3598,9 @@
+@@ -3458,9 +3458,9 @@
  	net->ipv4.sysctl_tcp_reordering = TCP_FASTRETRANS_THRESH;
  	net->ipv4.sysctl_tcp_retries1 = TCP_RETR1;
  	net->ipv4.sysctl_tcp_retries2 = TCP_RETR2;
@@ -21,7 +21,7 @@
  	net->ipv4.sysctl_tcp_tw_reuse = 2;
  	net->ipv4.sysctl_tcp_tw_reuse_delay = 1 * MSEC_PER_SEC;
  	net->ipv4.sysctl_tcp_no_ssthresh_metrics_save = 1;
-@@ -3615,7 +3615,7 @@
+@@ -3475,7 +3475,7 @@
  	net->ipv4.sysctl_tcp_recovery = TCP_RACK_LOSS_DETECTION;
  	net->ipv4.sysctl_tcp_slow_start_after_idle = 1; /* By default, RFC2861 behavior.  */
  	net->ipv4.sysctl_tcp_retrans_collapse = 1;
@@ -30,7 +30,7 @@
  	net->ipv4.sysctl_tcp_dsack = 1;
  	net->ipv4.sysctl_tcp_app_win = 31;
  	net->ipv4.sysctl_tcp_adv_win_scale = 1;
-@@ -3636,9 +3636,10 @@
+@@ -3497,9 +3497,10 @@
  	net->ipv4.sysctl_tcp_tso_rtt_log = 9;  /* 2^9 = 512 usec */
  	net->ipv4.sysctl_tcp_min_rtt_wlen = 300;
  	net->ipv4.sysctl_tcp_autocorking = 1;
@@ -44,20 +44,22 @@
  	if (net != &init_net) {
  		memcpy(net->ipv4.sysctl_tcp_rmem,
  		       init_net.ipv4.sysctl_tcp_rmem,
-@@ -3647,9 +3648,9 @@
+@@ -3508,10 +3509,10 @@
  		       init_net.ipv4.sysctl_tcp_wmem,
  		       sizeof(init_net.ipv4.sysctl_tcp_wmem));
  	}
 -	net->ipv4.sysctl_tcp_comp_sack_delay_ns = NSEC_PER_MSEC;
--	net->ipv4.sysctl_tcp_comp_sack_slack_ns = 100 * NSEC_PER_USEC;
+-	net->ipv4.sysctl_tcp_comp_sack_slack_ns = 10 * NSEC_PER_USEC;
 -	net->ipv4.sysctl_tcp_comp_sack_nr = 44;
+-	net->ipv4.sysctl_tcp_comp_sack_rtt_percent = 33;
 +	net->ipv4.sysctl_tcp_comp_sack_delay_ns = 13 * NSEC_PER_MSEC / 10;
-+	net->ipv4.sysctl_tcp_comp_sack_slack_ns = 122 * NSEC_PER_USEC;
++	net->ipv4.sysctl_tcp_comp_sack_slack_ns = 25 * NSEC_PER_USEC;
 +	net->ipv4.sysctl_tcp_comp_sack_nr = 35;
++	net->ipv4.sysctl_tcp_comp_sack_rtt_percent = 18;
  	net->ipv4.sysctl_tcp_backlog_ack_defer = 1;
  	net->ipv4.sysctl_tcp_fastopen = TFO_CLIENT_ENABLE;
  	net->ipv4.sysctl_tcp_fastopen_blackhole_timeout = 0;
-@@ -3673,7 +3674,7 @@
+@@ -3535,7 +3536,7 @@
  
  	net->ipv4.sysctl_tcp_syn_linear_timeouts = 4;
  	net->ipv4.sysctl_tcp_shrink_window = 0;
@@ -66,3 +68,39 @@
  
  	net->ipv4.sysctl_tcp_pingpong_thresh = 1;
  	net->ipv4.sysctl_tcp_rto_min_us = jiffies_to_usecs(TCP_RTO_MIN);
+--- a/Documentation/networking/ip-sysctl.rst
++++ b/Documentation/networking/ip-sysctl.rst
+@@ -892,15 +892,14 @@
+ 
+ 	Possible values : 1 - 1000
+ 
+-	Default : 33 %
++	Default : 18 %
+ 
+ tcp_comp_sack_delay_ns - LONG INTEGER
+ 	TCP tries to reduce number of SACK sent, using a timer based
+ 	on tcp_comp_sack_rtt_percent of SRTT, capped by this sysctl
+ 	in nano seconds.
+-	The default is 1ms, based on TSO autosizing period.
+ 
+-	Default : 1,000,000 ns (1 ms)
++	Default : 1,300,000 ns (1.3 ms)
+ 
+ tcp_comp_sack_slack_ns - LONG INTEGER
+ 	This sysctl control the slack used when arming the
+@@ -909,13 +908,13 @@
+ 	opportunistic reduction of timer interrupts.
+ 	Too big values might reduce goodput.
+ 
+-	Default : 10,000 ns (10 us)
++	Default : 25,000 ns (25 us)
+ 
+ tcp_comp_sack_nr - INTEGER
+ 	Max number of SACK that can be compressed.
+ 	Using 0 disables SACK compression.
+ 
+-	Default : 44
++	Default : 35
+ 
+ tcp_backlog_ack_defer - BOOLEAN
+ 	If enabled, user thread processing socket backlog tries sending

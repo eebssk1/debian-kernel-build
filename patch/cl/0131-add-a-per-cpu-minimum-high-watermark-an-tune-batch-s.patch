@@ -1,36 +1,39 @@
 From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Arjan van de Ven <arjan.van.de.ven@intel.com>
 Date: Tue, 23 Nov 2021 17:38:50 +0000
-Subject: [PATCH] add a per cpu minimum high watermark an tune batch size
+Subject: [PATCH] mm: size PCP batches by zone and total memory
 
-make sure there's at least 1024 per cpu pages... a reasonably small
-amount for todays system
+Fold the 6.18 batch divisor into the zone shifts and size caps. Use
+1/8192 of the zone, capped at 256 KiB, above 2032 MiB of RAM. At or
+below 2032 MiB use 1/4096, raising the cap to 512 KiB from 640 MiB.
+Keep the minimum and power-of-two rounding; do not set a PCP high watermark.
 ---
- mm/page_alloc.c | 5 +++--
- 1 file changed, 3 insertions(+), 2 deletions(-)
-
-diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-index e6f211dcf82e..0ea48434ac7d 100644
 --- a/mm/page_alloc.c
 +++ b/mm/page_alloc.c
-@@ -5906,6 +5906,7 @@
+@@ -6162,17 +6162,19 @@ void __ref build_all_zonelists(pg_data_t
+ 
+ static int zone_batchsize(struct zone *zone)
  {
  #ifdef CONFIG_MMU
++	unsigned long mem_mb = totalram_pages() / (SZ_1M / PAGE_SIZE);
  	int batch;
-+	int mem = (totalram_pages() * PAGE_SIZE) >> 20;
+ 
+-	/*
+-	 * The number of pages to batch allocate is either ~0.025%
+-	 * of the zone or 256KB, whichever is smaller. The batch
+-	 * size is striking a balance between allocation latency
+-	 * and zone lock contention.
+-	 */
+-	batch = min(zone_managed_pages(zone) >> 12, SZ_256K / PAGE_SIZE);
++	/* Fold the 6.18 final division by four into the shifts and caps. */
++	if (mem_mb <= 2032) {
++		unsigned long cap = mem_mb >= 640 ? SZ_512K : SZ_256K;
++
++		batch = min(zone_managed_pages(zone) >> 12, cap / PAGE_SIZE);
++	} else {
++		batch = min(zone_managed_pages(zone) >> 13, SZ_256K / PAGE_SIZE);
++	}
+ 	if (batch <= 1)
+ 		return 1;
  
  	/*
- 	 * The number of pages to batch allocate is either ~0.1%
-@@ -5913,7 +5915,11 @@
- 	 * size is striking a balance between allocation latency
- 	 * and zone lock contention.
- 	 */
--	batch = min(zone_managed_pages(zone) >> 10, SZ_1M / PAGE_SIZE);
-+	batch = min(zone_managed_pages(zone) >> 11, SZ_1M / PAGE_SIZE);
-+	if (mem <= 2032) {
-+		batch = (mem >= 640 ? 2 : 1) * SZ_1M / PAGE_SIZE;
-+		batch = min(zone_managed_pages(zone) >> 10, batch);
-+	}
- 	batch /= 4;		/* We effectively *= 4 below */
- 	if (batch < 1)
- 		batch = 1;

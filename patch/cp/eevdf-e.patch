@@ -1,8 +1,7 @@
-diff --git a/include/linux/sched.h b/include/linux/sched.h
-index 3e2005e9e..589ab29cb 100644
 --- a/include/linux/sched.h
 +++ b/include/linux/sched.h
-@@ -508,8 +508,10 @@ struct sched_avg {
+@@ -512,10 +512,12 @@ struct sched_avg {
+ 	u64				load_sum;
  	u64				runnable_sum;
  	u32				util_sum;
  	u32				period_contrib;
@@ -13,7 +12,9 @@ index 3e2005e9e..589ab29cb 100644
  	unsigned long			util_avg;
  	unsigned int			util_est;
  } ____cacheline_aligned;
-@@ -600,6 +602,8 @@ struct sched_entity {
+ 
+@@ -597,8 +599,10 @@ struct sched_entity {
+ 	u64				slice;
  
  	u64				nr_migrations;
  
@@ -22,10 +23,11 @@ index 3e2005e9e..589ab29cb 100644
  #ifdef CONFIG_FAIR_GROUP_SCHED
  	int				depth;
  	struct sched_entity		*parent;
-diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+ 	/* rq on which this entity is (to be) queued: */
 --- a/kernel/sched/fair.c
 +++ b/kernel/sched/fair.c
-@@ -81,6 +81,23 @@
+@@ -86,8 +86,25 @@ unsigned int sysctl_sched_base_slice			=
+ static unsigned int normalized_sysctl_sched_base_slice	= 700000ULL;
  
  __read_mostly unsigned int sysctl_sched_migration_cost	= 500000UL;
  
@@ -34,14 +36,14 @@ diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
 +__read_mostly unsigned int sysctl_sched_burst_penalty_relief = 4;
 +
 +/*
-+ * Wakeup-burst penalty: a task that wakes very frequently while using
-+ * little CPU (e.g. a hammering yield/futex loop) is pushed back on the
-+ * EEVDF lag scale instead of being granted the full sleep benefit.
-+ * wakeup_avg is a PELT-decayed wakeup rate: each wakeup adds 1024, the
-+ * PELT half-life is 24ms and wakeup_avg = wakeup_sum / divider, so
-+ * wakeup_avg ~= sustained wakeup rate in thousands per second.
-+ * The threshold punishes ~2k+ wakeups/sec; UTIL_LOW_THRESHOLD keeps
-+ * busy tasks (real work) out of the penalty path. Tune via sysctl.
++ * Each actual wakeup enqueue adds 1024 to the entity's wakeup_sum
++ * before its PELT update. wakeup_avg is the decayed sum divided by
++ * the PELT divider; it approximates thousands of wakeups per second.
++ * Placement considers only tasks whose integer average exceeds the
++ * wakeup threshold and whose utilization is low. Negative nice can
++ * exempt a task. On qualifying placements, periodic relief increases
++ * positive lag instead of reducing it. None of these policy checks
++ * changes which enqueue events are counted.
 + */
 +#define WAKEUP_PENALTY_THRESHOLD	2
 +#define UTIL_LOW_THRESHOLD		76
@@ -49,8 +51,10 @@ diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
  static int __init setup_sched_thermal_decay_shift(char *str)
  {
  	pr_warn("Ignoring the deprecated sched_thermal_decay_shift= option\n");
-@@ -5286,6 +5303,37 @@
- 		lag = div_s64(lag, load);
+ 	return 1;
+@@ -6504,8 +6521,39 @@ place_entity(struct cfs_rq *cfs_rq, stru
+ 		if (weight > load)
+ 			update_zero = true;
  	}
  
 +	if (unlikely(sysctl_sched_burst_penalty_enable &&
@@ -86,24 +90,24 @@ diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
 +
  	se->vruntime = vruntime - lag;
  
- 	if (se->rel_deadline) {
-@@ -5319,6 +5367,10 @@
- {
- 	bool curr = cfs_rq->curr == se;
+ 	if (update_zero)
+ 		update_zero_vruntime(cfs_rq, -lag);
+@@ -6535,8 +6583,11 @@ static inline int cfs_rq_throttled(struc
  
-+	if (flags & ENQUEUE_WAKEUP) {
+ static void
+ enqueue_entity(struct cfs_rq *cfs_rq, struct sched_entity *se, int flags)
+ {
++	if (flags & ENQUEUE_WAKEUP)
 +		se->avg.wakeup_sum += 1024;
-+	}
 +
  	/*
- 	 * If we're the current task, we must renormalise before calling
- 	 * update_curr().
-
-diff --git a/kernel/sched/pelt.c b/kernel/sched/pelt.c
-index fa83bbaf4..655134e3e 100644
+ 	 * When enqueuing a sched_entity, we must:
+ 	 *   - Update loads to have both entity and cfs_rq synced with now.
+ 	 *   - For group_entity, update its runnable_weight to reflect the new
 --- a/kernel/sched/pelt.c
 +++ b/kernel/sched/pelt.c
-@@ -117,6 +117,7 @@ accumulate_sum(u64 delta, struct sched_avg *sa,
+@@ -116,8 +116,9 @@ accumulate_sum(u64 delta, struct sched_a
+ 		sa->load_sum = decay_load(sa->load_sum, periods);
  		sa->runnable_sum =
  			decay_load(sa->runnable_sum, periods);
  		sa->util_sum = decay_load((u64)(sa->util_sum), periods);
@@ -111,7 +115,9 @@ index fa83bbaf4..655134e3e 100644
  
  		/*
  		 * Step 2
-@@ -265,6 +266,7 @@ ___update_load_avg(struct sched_avg *sa, unsigned long load)
+ 		 */
+@@ -264,8 +265,9 @@ ___update_load_avg(struct sched_avg *sa,
+ 	 */
  	sa->load_avg = div_u64(load * sa->load_sum, divider);
  	sa->runnable_avg = div_u64(sa->runnable_sum, divider);
  	WRITE_ONCE(sa->util_avg, sa->util_sum / divider);
@@ -119,11 +125,11 @@ index fa83bbaf4..655134e3e 100644
  }
  
  /*
-diff --git a/kernel/sysctl.c b/kernel/sysctl.c
-index 655afea94..0a7a8dcc8 100644
+  * sched_entity:
 --- a/kernel/sysctl.c
 +++ b/kernel/sysctl.c
-@@ -38,6 +38,10 @@ extern int sysctl_sched_yield_type;
+@@ -34,8 +34,12 @@ EXPORT_SYMBOL_GPL(sysctl_long_vals);
+ #ifdef CONFIG_USER_NS
  extern int unprivileged_userns_clone;
  #endif
  
@@ -134,7 +140,9 @@ index 655afea94..0a7a8dcc8 100644
  /* Constants used for minimum and maximum */
  static const int ngroups_max = NGROUPS_MAX;
  static const int cap_last_cap = CAP_LAST_CAP;
-@@ -1522,6 +1526,33 @@ static const struct ctl_table sysctl_subsys_table[] = {
+ 
+@@ -1453,8 +1457,35 @@ static const struct ctl_table sysctl_sub
+ 		.mode		= 0644,
  		.proc_handler	= proc_dointvec,
  	},
  #endif
@@ -168,3 +176,4 @@ index 655afea94..0a7a8dcc8 100644
  };
  
  int __init sysctl_init_bases(void)
+ {

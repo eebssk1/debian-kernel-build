@@ -1,6 +1,6 @@
---- a/net/core/hotdata.c	2026-06-19 08:02:36.275647682 +0000
-+++ b/net/core/hotdata.c	2026-06-19 08:03:22.836646543 +0000
-@@ -11,16 +11,16 @@
+--- a/net/core/hotdata.c
++++ b/net/core/hotdata.c
+@@ -11,17 +11,17 @@
  	.offload_base = LIST_HEAD_INIT(net_hotdata.offload_base),
  	.gro_normal_batch = 8,
  
@@ -12,11 +12,23 @@
  	.tstamp_prequeue = 1,
 -	.max_backlog = 1000,
 +	.max_backlog = 1680,
+ 	.qdisc_max_burst = 1000,
  	.dev_tx_weight = 64,
  	.dev_rx_weight = 64,
  	.sysctl_max_skb_frags = MAX_SKB_FRAGS,
--	.sysctl_skb_defer_max = 64,
-+	.sysctl_skb_defer_max = 80,
+-	.sysctl_skb_defer_max = 128,
++	.sysctl_skb_defer_max = 96,
  	.sysctl_mem_pcpu_rsv = SK_MEMORY_PCPU_RESERVE
  };
  EXPORT_SYMBOL(net_hotdata);
+--- a/Documentation/admin-guide/sysctl/net.rst
++++ b/Documentation/admin-guide/sysctl/net.rst
+@@ -365,7 +365,7 @@
+ Max size (in skbs) of the per-cpu list of skbs being freed
+ by the cpu which allocated them.
+ 
+-Default: 128
++Default: 96
+ 
+ optmem_max
+ ----------

@@ -1,73 +1,68 @@
---- a/mm/vmscan.c	2023-12-18 20:06:59.671223984 +0800
-+++ b/mm/vmscan.c	2023-12-18 20:14:22.587205874 +0800
-@@ -65,6 +65,9 @@
- #include <linux/balloon_compaction.h>
+--- a/mm/vmscan.c
++++ b/mm/vmscan.c
+@@ -65,8 +65,10 @@
+ 
+ #include <linux/swapops.h>
  #include <linux/sched/sysctl.h>
  
-+#include <uapi/linux/sched/types.h>
 +#include <linux/sched.h>
 +
  #include "internal.h"
+ #include "page_alloc.h"
  #include "swap.h"
  
-@@ -7897,6 +7899,11 @@
- 			pr_err("Failed to start kswapd on node %d\n", nid);
+@@ -7855,8 +7857,14 @@ void __meminit kswapd_run(int nid)
  			pgdat->kswapd = NULL;
+ 		} else {
+ 			wake_up_process(pgdat->kswapd);
  		}
 +		if (pgdat->kswapd) {
 +			struct sched_param sp = { .sched_priority = 0 };
++
 +			sched_setscheduler_nocheck(pgdat->kswapd, SCHED_BATCH, &sp);
 +			set_user_nice(pgdat->kswapd, -1);
 +		}
  	}
  	pgdat_kswapd_unlock(pgdat);
  }
-
---- a/drivers/char/hw_random/core.c	2023-12-18 23:20:04.239138755 +0800
-+++ b/drivers/char/hw_random/core.c	2023-12-18 23:24:53.475990801 +0800
-@@ -20,6 +20,7 @@
- #include <linux/miscdevice.h>
- #include <linux/module.h>
- #include <linux/random.h>
- #include <linux/rcupdate.h>
-+#include <uapi/linux/sched/types.h>
- #include <linux/sched.h>
- #include <linux/sched/signal.h>
-@@ -105,6 +105,11 @@
+ 
+--- a/drivers/char/hw_random/core.c
++++ b/drivers/char/hw_random/core.c
+@@ -520,8 +520,13 @@ static void hwrng_start_hwrng_fillfn(voi
+ 		hwrng_fill = kthread_run(hwrng_fillfn, NULL, "hwrng");
+ 		if (IS_ERR(hwrng_fill)) {
  			pr_err("hwrng_fill thread creation failed\n");
  			hwrng_fill = NULL;
- 		}
-+		if (hwrng_fill) {
++		} else {
 +			struct sched_param sp = { .sched_priority = 0 };
++
 +			sched_setscheduler_nocheck(hwrng_fill, SCHED_BATCH, &sp);
 +			set_user_nice(hwrng_fill, 1);
-+		}
+ 		}
  	}
+ }
  
- 	return 0;
-
---- a/kernel/softirq.c	2023-12-19 00:14:35.229563287 +0800
-+++ b/kernel/softirq.c	2023-12-19 00:27:35.895177441 +0800
-@@ -28,6 +28,9 @@
+--- a/kernel/softirq.c
++++ b/kernel/softirq.c
+@@ -29,8 +29,10 @@
  #include <linux/irq.h>
  #include <linux/wait_bit.h>
+ #include <linux/workqueue.h>
  
-+#include <uapi/linux/sched/types.h>
 +#include <linux/sched.h>
 +
  #include <asm/softirq_stack.h>
  
  #define CREATE_TRACE_POINTS
-@@ -956,11 +958,20 @@
+ #include <trace/events/irq.h>
+@@ -1135,13 +1137,19 @@ static int takeover_tasklets(unsigned in
+ #else
  #define takeover_tasklets	NULL
  #endif /* CONFIG_HOTPLUG_CPU */
  
-+
-+static inline void setsched(unsigned int cpu) {
-+	struct task_struct *tsk = per_cpu(ksoftirqd, cpu);
-+	/*struct sched_param sp = { .sched_priority = 0 };*/
-+   /*sched_setscheduler_nocheck(tsk, SCHED_NORMAL, &sp);*/
-+	set_user_nice(tsk, -1);
++static void ksoftirqd_create(unsigned int cpu)
++{
++	set_user_nice(per_cpu(ksoftirqd, cpu), -1);
 +}
 +
  static struct smp_hotplug_thread softirq_threads = {
@@ -75,14 +70,15 @@
  	.thread_should_run	= ksoftirqd_should_run,
  	.thread_fn		= run_ksoftirqd,
  	.thread_comm		= "ksoftirqd/%u",
-+	.create			= setsched,
++	.create			= ksoftirqd_create,
  };
  
- static __init int spawn_ksoftirqd(void)
-
---- a/kernel/rcu/tree.c	2023-12-19 00:49:58.797313711 +0800
-+++ b/kernel/rcu/tree.c	2023-12-19 01:14:17.067827467 +0800
-@@ -4759,6 +4759,8 @@
+ #ifdef CONFIG_IRQ_FORCED_THREADING
+ static void ktimerd_setup(unsigned int cpu)
+--- a/kernel/rcu/tree.c
++++ b/kernel/rcu/tree.c
+@@ -4665,8 +4665,10 @@ static int __init rcu_spawn_gp_kthread(v
+ 		return 0;
  	if (kthread_prio) {
  		sp.sched_priority = kthread_prio;
  		sched_setscheduler_nocheck(t, SCHED_FIFO, &sp);
@@ -91,10 +87,11 @@
  	}
  	rnp = rcu_get_root();
  	raw_spin_lock_irqsave_rcu_node(rnp, flags);
-
---- a/kernel/rcu/tree_nocb.h	2023-12-19 01:27:44.451330028 +0800
-+++ b/kernel/rcu/tree_nocb.h	2023-12-19 01:33:38.871458414 +0800
-@@ -1513,6 +1513,8 @@
+ 	WRITE_ONCE(rcu_state.gp_activity, jiffies);
+--- a/kernel/rcu/tree_nocb.h
++++ b/kernel/rcu/tree_nocb.h
+@@ -1456,8 +1456,10 @@ static void rcu_spawn_cpu_nocb_kthread(i
+ 		}
  		WRITE_ONCE(rdp_gp->nocb_gp_kthread, t);
  		if (kthread_prio)
  			sched_setscheduler_nocheck(t, SCHED_FIFO, &sp);
@@ -103,7 +100,9 @@
  	}
  	mutex_unlock(&rdp_gp->nocb_gp_kthread_mutex);
  
-@@ -1524,6 +1526,8 @@
+ 	/* Spawn the kthread for this CPU. */
+@@ -1472,8 +1474,10 @@ static void rcu_spawn_cpu_nocb_kthread(i
+ 		kthread_park(t);
  
  	if (IS_ENABLED(CONFIG_RCU_NOCB_CPU_CB_BOOST) && kthread_prio)
  		sched_setscheduler_nocheck(t, SCHED_FIFO, &sp);
@@ -112,33 +111,39 @@
  
  	WRITE_ONCE(rdp->nocb_cb_kthread, t);
  	WRITE_ONCE(rdp->nocb_gp_kthread, rdp_gp->nocb_gp_kthread);
-
- 
---- a/mm/compaction.c	2023-12-19 01:50:24.575699347 +0800
-+++ b/mm/compaction.c	2023-12-19 01:54:08.379130832 +0800
-@@ -3143,6 +3143,11 @@
- 		pr_err("Failed to start kcompactd on node %d\n", nid);
+ 	return;
+--- a/mm/compaction.c
++++ b/mm/compaction.c
+@@ -3276,8 +3276,14 @@ void __meminit kcompactd_run(int nid)
  		pgdat->kcompactd = NULL;
+ 	} else {
+ 		wake_up_process(pgdat->kcompactd);
  	}
 +	if (pgdat->kcompactd) {
-+               struct sched_param sp = { .sched_priority = 0 };
-+               sched_setscheduler_nocheck(pgdat->kcompactd, SCHED_BATCH, &sp);
++		struct sched_param sp = { .sched_priority = 0 };
++
++		sched_setscheduler_nocheck(pgdat->kcompactd, SCHED_BATCH, &sp);
 +		set_user_nice(pgdat->kcompactd, 2);
 +	}
  }
  
  /*
-
---- a/mm/ksm.c	2024-12-22 10:44:47.432117094 +0000
-+++ b/mm/ksm.c	2024-12-22 10:48:42.345032817 +0000
-@@ -2762,7 +2762,9 @@
+  * Called by memory hotplug when all memory in a node is offlined. Caller must
+--- a/mm/ksm.c
++++ b/mm/ksm.c
+@@ -2846,12 +2846,14 @@ static int ksmd_should_run(void)
+ }
+ 
+ static int ksm_scan_thread(void *nothing)
+ {
++	struct sched_param sp = { .sched_priority = 0 };
  	unsigned int sleep_ms;
  
  	set_freezable();
 -	set_user_nice(current, 5);
-+	struct sched_param sp = { .sched_priority = 0 };
 +	sched_setscheduler_nocheck(current, SCHED_BATCH, &sp);
 +	set_user_nice(current, 3);
  
  	while (!kthread_should_stop()) {
  		mutex_lock(&ksm_thread_mutex);
+ 		wait_while_offlining();

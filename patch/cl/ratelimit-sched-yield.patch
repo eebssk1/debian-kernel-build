@@ -1,27 +1,20 @@
 From 467904416b3786c9f2b29ca683d36cb2523ae7ce Mon Sep 17 00:00:00 2001
 From: Colin Ian King <colin.i.king@intel.com>
 Date: Thu, 17 Oct 2024 16:29:50 +0100
-Subject: [PATCH] rate limit sched_yield with a token bucket
+Subject: [PATCH] sched: limit explicit yields per CPU
 
-Some misguided apps hammer sched_yield() in a tight loop (they should be
-using futexes instead) which causes massive lock contention even if there
-is little work to do or to yield to.
-
-Modified from the original jiffies-based version: rate limit on a fixed
-1ms window via local_clock() with a token bucket (YIELD_MAX_PER_MS per
-window), so behavior no longer depends on HZ (the original one-jiffy
-window was 5.7ms at HZ=175, making sched_yield() a no-op for well-behaved
-waiters for too long) while still allowing short bursts of well-behaved
-yield-based waiters.
+Run cond_resched() first, then admit up to four yields per CPU per 1 ms
+window before taking the rq lock. Both sched_yield(2) and kernel yield()
+use this path; yield_to() does not. Keep IRQs disabled from the clock
+sample through rq acquisition so the budget and runqueue belong to the
+same CPU. The donor, schedstats and schedule path are unchanged.
 
 Signed-off-by: Colin Ian King <colin.i.king@intel.com>
 ---
- kernel/sched/syscalls.c | 25 +++++++++++++++++++++++++
- 1 file changed, 25 insertions(+)
-
 --- a/kernel/sched/syscalls.c
 +++ b/kernel/sched/syscalls.c
-@@ -8,6 +8,7 @@
+@@ -7,8 +7,9 @@
+  *  Copyright (C) 1991-2002  Linus Torvalds
   *  Copyright (C) 1998-2024  Ingo Molnar, Red Hat
   */
  #include <linux/sched.h>
@@ -29,45 +22,42 @@ Signed-off-by: Colin Ian King <colin.i.king@intel.com>
  #include <linux/cpuset.h>
  #include <linux/sched/debug.h>
  
-@@ -1364,14 +1365,39 @@
-  */
- __read_mostly int sysctl_sched_yield_type = 2;
+ #include <uapi/linux/sched/types.h>
+@@ -1332,14 +1333,36 @@ SYSCALL_DEFINE3(sched_getaffinity, pid_t
+ 
+ 	return ret;
+ }
  
 +#define YIELD_MAX_PER_MS	4
 +
-+static DEFINE_PER_CPU(unsigned long, last_yield);
++static DEFINE_PER_CPU(u64, last_yield);
 +static DEFINE_PER_CPU(unsigned int, yield_budget);
 +
  static void do_sched_yield(void)
  {
  	struct rq_flags rf;
  	struct rq *rq;
-+	unsigned long cur_ns;
++	u64 now;
 +
 +	cond_resched();
- 
- 	if (!sysctl_sched_yield_type)
- 		return;
- 
-+	/* Token-bucket rate limit, HZ-independent via local_clock():
-+	 * allow YIELD_MAX_PER_MS yields per 1ms window, then throttle.
-+	 * Blocks misguided apps that hammer sched_yield() in a tight loop
-+	 * (millions of calls per second, causing massive lock contention)
-+	 * while preserving short bursts of well-behaved yield-based waiters.
-+	 */
-+	cur_ns = local_clock();
-+	if (unlikely(cur_ns - this_cpu_read(last_yield) >= 1000000UL)) {
-+		this_cpu_write(last_yield, cur_ns);
-+		this_cpu_write(yield_budget, YIELD_MAX_PER_MS);
++
++	/* Charge the CPU that will yield, without locking its rq on denial. */
++	local_irq_disable();
++	now = local_clock();
++	if (now - __this_cpu_read(last_yield) >= NSEC_PER_MSEC) {
++		__this_cpu_write(last_yield, now);
++		__this_cpu_write(yield_budget, YIELD_MAX_PER_MS);
 +	}
-+
-+	if (unlikely(this_cpu_read(yield_budget) == 0))
++	if (!__this_cpu_read(yield_budget)) {
++		local_irq_enable();
 +		return;
-+
-+	this_cpu_dec(yield_budget);
-+
- 	rq = this_rq_lock_irq(&rf);
++	}
++	__this_cpu_dec(yield_budget);
+ 
+-	rq = this_rq_lock_irq(&rf);
++	rq = this_rq();
++	rq_lock(rq, &rf);
  
  	schedstat_inc(rq->yld_count);
--- 
-2.46.2
+ 	rq->donor->sched_class->yield_task(rq);
+ 
