@@ -33,18 +33,20 @@
  static s32 cake_enqueue(struct sk_buff *skb, struct Qdisc *sch,
  			struct sk_buff **to_free)
  {
-@@ -1816,6 +1828,10 @@
+@@ -1816,6 +1828,12 @@
  			cobalt_set_enqueue_time(segs, now);
  			get_cobalt_cb(segs)->adjusted_len = cake_overhead(q,
  									  segs);
 +			if (unlikely(cake_should_drop_burst(sch, segs, b->backlogs[idx]))) {
++				WRITE_ONCE(flow->dropped, flow->dropped + 1);
++				WRITE_ONCE(b->tin_dropped, b->tin_dropped + 1);
 +				qdisc_drop(segs, sch, to_free);
 +				continue;
 +			}
  			flow_queue_add(flow, segs);
  
  			qdisc_qlen_inc(sch);
-@@ -1825,6 +1841,12 @@
+@@ -1825,6 +1843,12 @@
  			WRITE_ONCE(b->packets, b->packets + 1);
  		}
  
@@ -57,16 +59,19 @@
  		/* stats */
  		qstats_backlog_add(sch, slen);
  		q->avg_window_bytes += slen;
-@@ -1840,6 +1862,8 @@
+@@ -1840,6 +1864,11 @@
  
  		cobalt_set_enqueue_time(skb, now);
  		get_cobalt_cb(skb)->adjusted_len = cake_overhead(q, skb);
-+		if (unlikely(cake_should_drop_burst(sch, skb, b->backlogs[idx])))
++		if (unlikely(cake_should_drop_burst(sch, skb, b->backlogs[idx]))) {
++			WRITE_ONCE(flow->dropped, flow->dropped + 1);
++			WRITE_ONCE(b->tin_dropped, b->tin_dropped + 1);
 +			return qdisc_drop(skb, sch, to_free);
++		}
  		flow_queue_add(flow, skb);
  
  		if (q->config->ack_filter)
-@@ -2579,6 +2603,19 @@
+@@ -2579,6 +2608,19 @@
  	return 0;
  }
  
@@ -86,7 +91,7 @@
  static void cake_configure_rates(struct Qdisc *sch, u64 rate, bool rate_adjust)
  {
  	u32 mtu = likely(rate_adjust) ? 0 : psched_mtu(qdisc_dev(sch));
-@@ -2618,6 +2655,7 @@
+@@ -2618,6 +2660,7 @@
  
  	qd->rate_ns   = qd->tins[ft].tin_rate_ns;
  	qd->rate_shft = qd->tins[ft].tin_rate_shft;
