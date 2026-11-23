@@ -1,0 +1,9 @@
+Keep the file-local target's name available to the static-call trampoline under ThinLTO.
+
+--- a/kernel/sched/fair.c
++++ b/kernel/sched/fair.c
+@@ -5209,3 +5209,3 @@
+  */
+-static long calc_concur_shares(struct cfs_rq *cfs_rq)
++static __used long calc_concur_shares(struct cfs_rq *cfs_rq)
+ {
