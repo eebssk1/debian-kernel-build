@@ -1,7 +1,39 @@
+--- a/fs/eventpoll.c
++++ b/fs/eventpoll.c
+@@ -2346,8 +2346,7 @@
+ 			if (to)
+ 				slack = select_estimate_accuracy(timeout);
+ 			timed_out = !ep_schedule_timeout(to) ||
+-				!schedule_hrtimeout_range(to, slack,
+-							  HRTIMER_MODE_ABS);
++				!schedule_user_poll_timeout(to, slack);
+ 		}
+ 		__set_current_state(TASK_RUNNING);
+ 
+--- a/fs/select.c
++++ b/fs/select.c
+@@ -238,7 +238,7 @@
+ 
+ 	set_current_state(state);
+ 	if (!READ_ONCE(pwq->triggered))
+-		rc = schedule_hrtimeout_range(expires, slack, HRTIMER_MODE_ABS);
++		rc = schedule_user_poll_timeout(expires, slack);
+ 	__set_current_state(TASK_RUNNING);
+ 
+ 	/*
+--- a/include/linux/hrtimer.h
++++ b/include/linux/hrtimer.h
+@@ -320,6 +320,7 @@
+ 					  const enum hrtimer_mode mode,
+ 					  clockid_t clock_id);
+ extern int schedule_hrtimeout(ktime_t *expires, const enum hrtimer_mode mode);
++int schedule_user_poll_timeout(ktime_t *expires, u64 slack);
+ 
+ /* Soft interrupt function to run the hrtimer queues: */
+ extern void hrtimer_run_queues(void);
 --- a/include/linux/sched.h
 +++ b/include/linux/sched.h
-@@ -512,10 +512,12 @@ struct sched_avg {
- 	u64				load_sum;
+@@ -513,8 +513,10 @@
  	u64				runnable_sum;
  	u32				util_sum;
  	u32				period_contrib;
@@ -12,9 +44,7 @@
  	unsigned long			util_avg;
  	unsigned int			util_est;
  } ____cacheline_aligned;
- 
-@@ -597,8 +599,10 @@ struct sched_entity {
- 	u64				slice;
+@@ -598,6 +600,8 @@
  
  	u64				nr_migrations;
  
@@ -23,27 +53,229 @@
  #ifdef CONFIG_FAIR_GROUP_SCHED
  	int				depth;
  	struct sched_entity		*parent;
- 	/* rq on which this entity is (to be) queued: */
+@@ -1018,6 +1022,7 @@
+ 	 * ->sched_remote_wakeup gets used, so it can be in this word.
+ 	 */
+ 	unsigned			sched_remote_wakeup:1;
++	unsigned			sched_remote_sleep_timeout:1;
+ #ifdef CONFIG_RT_MUTEXES
+ 	unsigned			sched_rt_mutex:1;
+ #endif
+@@ -2027,6 +2032,7 @@
+ 
+ extern int wake_up_state(struct task_struct *tsk, unsigned int state);
+ extern int wake_up_process(struct task_struct *tsk);
++void wake_up_sleep_timeout(struct task_struct *p);
+ extern void wake_up_new_task(struct task_struct *tsk);
+ 
+ extern void kick_process(struct task_struct *tsk);
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -3826,7 +3826,7 @@
+ 
+ static void
+ ttwu_do_activate(struct rq *rq, struct task_struct *p, int wake_flags,
+-		 struct rq_flags *rf)
++		 bool sleep_timeout, struct rq_flags *rf)
+ {
+ 	int en_flags = ENQUEUE_WAKEUP | ENQUEUE_NOCLOCK;
+ 
+@@ -3837,6 +3837,9 @@
+ 
+ 	if (wake_flags & WF_RQ_SELECTED)
+ 		en_flags |= ENQUEUE_RQ_SELECTED;
++	/* The class can change between wakelist publication and activation. */
++	if (sleep_timeout && burst_timeout_task(p))
++		en_flags |= ENQUEUE_SLEEP_TIMEOUT;
+ 	if (wake_flags & WF_MIGRATED)
+ 		en_flags |= ENQUEUE_MIGRATED;
+ 	else if (p->in_iowait) {
+@@ -3885,7 +3888,7 @@
+  * Returns: %true when the wakeup is done,
+  *          %false otherwise.
+  */
+-static int ttwu_runnable(struct task_struct *p, int wake_flags)
++static int ttwu_runnable(struct task_struct *p, int wake_flags, bool sleep_timeout)
+ {
+ 	ACQUIRE(__task_rq_lock, guard)(p);
+ 	struct rq *rq = guard.rq;
+@@ -3895,8 +3898,15 @@
+ 
+ 	update_rq_clock(rq);
+ 	if (p->is_blocked) {
+-		if (p->se.sched_delayed)
+-			enqueue_task(rq, p, ENQUEUE_NOCLOCK | ENQUEUE_DELAYED);
++		if (p->se.sched_delayed) {
++			int flags = ENQUEUE_NOCLOCK | ENQUEUE_DELAYED;
++
++			/* Don't charge an intermediate requeue before proxy return. */
++			if (sleep_timeout && (!IS_ENABLED(CONFIG_SCHED_PROXY_EXEC) ||
++					      task_cpu(p) == p->wake_cpu))
++				flags |= ENQUEUE_SLEEP_TIMEOUT;
++			enqueue_task(rq, p, flags);
++		}
+ 		if (proxy_needs_return(rq, p))
+ 			return 0;
+ 	}
+@@ -3931,7 +3941,8 @@
+ 		if (WARN_ON_ONCE(task_cpu(p) != cpu_of(rq)))
+ 			set_task_cpu(p, cpu_of(rq));
+ 
+-		ttwu_do_activate(rq, p, p->sched_remote_wakeup ? WF_MIGRATED : 0, &rf);
++		ttwu_do_activate(rq, p, p->sched_remote_wakeup ? WF_MIGRATED : 0,
++				 p->sched_remote_sleep_timeout, &rf);
+ 	}
+ 
+ 	/*
+@@ -3970,11 +3981,14 @@
+  * via sched_ttwu_wakeup() for activation so the wakee incurs the cost
+  * of the wakeup instead of the waker.
+  */
+-static void __ttwu_queue_wakelist(struct task_struct *p, int cpu, int wake_flags)
++static void __ttwu_queue_wakelist(struct task_struct *p, int cpu, int wake_flags,
++				  bool sleep_timeout)
+ {
+ 	struct rq *rq = cpu_rq(cpu);
+ 
+ 	p->sched_remote_wakeup = !!(wake_flags & WF_MIGRATED);
++	/* Payload of this wake_entry only; overwrite even on an external wake. */
++	p->sched_remote_sleep_timeout = sleep_timeout;
+ 
+ 	WRITE_ONCE(rq->ttwu_pending, 1);
+ #ifdef CONFIG_SMP
+@@ -4076,28 +4090,29 @@
+ 	return false;
+ }
+ 
+-static bool ttwu_queue_wakelist(struct task_struct *p, int cpu, int wake_flags)
++static bool ttwu_queue_wakelist(struct task_struct *p, int cpu, int wake_flags,
++			       bool sleep_timeout)
+ {
+ 	if (sched_feat(TTWU_QUEUE) && ttwu_queue_cond(p, cpu)) {
+ 		sched_clock_cpu(cpu); /* Sync clocks across CPUs */
+-		__ttwu_queue_wakelist(p, cpu, wake_flags);
++		__ttwu_queue_wakelist(p, cpu, wake_flags, sleep_timeout);
+ 		return true;
+ 	}
+ 
+ 	return false;
+ }
+ 
+-static void ttwu_queue(struct task_struct *p, int cpu, int wake_flags)
++static void ttwu_queue(struct task_struct *p, int cpu, int wake_flags, bool sleep_timeout)
+ {
+ 	struct rq *rq = cpu_rq(cpu);
+ 	struct rq_flags rf;
+ 
+-	if (ttwu_queue_wakelist(p, cpu, wake_flags))
++	if (ttwu_queue_wakelist(p, cpu, wake_flags, sleep_timeout))
+ 		return;
+ 
+ 	rq_lock(rq, &rf);
+ 	update_rq_clock(rq);
+-	ttwu_do_activate(rq, p, wake_flags, &rf);
++	ttwu_do_activate(rq, p, wake_flags, sleep_timeout, &rf);
+ 	rq_unlock(rq, &rf);
+ }
+ 
+@@ -4235,10 +4250,11 @@
+  */
+ 
+ /**
+- * try_to_wake_up - wake up a thread
++ * __try_to_wake_up - wake up a thread
+  * @p: the thread to be awakened
+  * @state: the mask of task states that can be woken
+  * @wake_flags: wake modifier flags (WF_*)
++ * @sleep_timeout: the target's own sleep timer expired
+  *
+  * Conceptually does:
+  *
+@@ -4271,7 +4287,8 @@
+  * Return: %true if @p->state changes (an actual wakeup was done),
+  *	   %false otherwise.
+  */
+-int try_to_wake_up(struct task_struct *p, unsigned int state, int wake_flags)
++static int __try_to_wake_up(struct task_struct *p, unsigned int state, int wake_flags,
++			    bool sleep_timeout)
+ {
+ 	guard(preempt)();
+ 	int cpu, success = 0;
+@@ -4318,6 +4335,8 @@
+ 		if (!ttwu_state_match(p, state, &success))
+ 			break;
+ 
++		/* Only this winning TTWU can carry the source into an enqueue. */
++		sleep_timeout = sleep_timeout && burst_timeout_task(p);
+ 		trace_sched_waking(p);
+ 
+ 		/*
+@@ -4343,7 +4362,7 @@
+ 		 * A similar smp_rmb() lives in __task_needs_rq_lock().
+ 		 */
+ 		smp_rmb();
+-		if (READ_ONCE(p->on_rq) && ttwu_runnable(p, wake_flags))
++		if (READ_ONCE(p->on_rq) && ttwu_runnable(p, wake_flags, sleep_timeout))
+ 			break;
+ 
+ 		/*
+@@ -4399,7 +4418,7 @@
+ 		 * scheduling.
+ 		 */
+ 		if (smp_load_acquire(&p->on_cpu) &&
+-		    ttwu_queue_wakelist(p, task_cpu(p), wake_flags))
++		    ttwu_queue_wakelist(p, task_cpu(p), wake_flags, sleep_timeout))
+ 			break;
+ 
+ 		/*
+@@ -4435,7 +4454,7 @@
+ 			p->wake_cpu = cpu;
+ 		}
+ 
+-		ttwu_queue(p, cpu, wake_flags);
++		ttwu_queue(p, cpu, wake_flags, sleep_timeout);
+ 	}
+ out:
+ 	if (success)
+@@ -4444,6 +4463,16 @@
+ 	return success;
+ }
+ 
++int try_to_wake_up(struct task_struct *p, unsigned int state, int wake_flags)
++{
++	return __try_to_wake_up(p, state, wake_flags, false);
++}
++
++void wake_up_sleep_timeout(struct task_struct *p)
++{
++	__try_to_wake_up(p, TASK_NORMAL, 0, true);
++}
++
+ static bool __task_needs_rq_lock(struct task_struct *p)
+ {
+ 	unsigned int state = READ_ONCE(p->__state);
+@@ -4592,6 +4621,7 @@
+ 	p->se.sum_exec_runtime		= 0;
+ 	p->se.prev_sum_exec_runtime	= 0;
+ 	p->se.nr_migrations		= 0;
++	p->se.wakeup_penalty_count	= 0;
+ 	p->se.vruntime			= 0;
+ 	p->se.vlag			= 0;
+ 	p->se.rel_deadline		= 0;
 --- a/kernel/sched/fair.c
 +++ b/kernel/sched/fair.c
-@@ -86,8 +86,25 @@ unsigned int sysctl_sched_base_slice			=
- static unsigned int normalized_sysctl_sched_base_slice	= 700000ULL;
+@@ -87,6 +87,18 @@
  
  __read_mostly unsigned int sysctl_sched_migration_cost	= 500000UL;
  
 +__read_mostly unsigned int sysctl_sched_burst_penalty_enable = 1;
-+__read_mostly unsigned int sysctl_sched_burst_penalty_nice_strict = 1;
 +__read_mostly unsigned int sysctl_sched_burst_penalty_relief = 4;
 +
 +/*
-+ * Each actual wakeup enqueue adds 1024 to the entity's wakeup_sum
-+ * before its PELT update. wakeup_avg is the decayed sum divided by
-+ * the PELT divider; it approximates thousands of wakeups per second.
-+ * Placement considers only tasks whose integer average exceeds the
-+ * wakeup threshold and whose utilization is low. Negative nice can
-+ * exempt a task. On qualifying placements, periodic relief increases
-+ * positive lag instead of reducing it. None of these policy checks
-+ * changes which enqueue events are counted.
++ * Count eligible task enqueues won by the task's sleep timeout. The
++ * decayed sum / PELT divider estimates thousands of such wakes/sec,
++ * not time asleep or work done. Only a placement from the same kind
++ * of wake can reduce positive lag or advance/reset periodic relief.
 + */
 +#define WAKEUP_PENALTY_THRESHOLD	2
 +#define UTIL_LOW_THRESHOLD		76
@@ -51,24 +283,15 @@
  static int __init setup_sched_thermal_decay_shift(char *str)
  {
  	pr_warn("Ignoring the deprecated sched_thermal_decay_shift= option\n");
- 	return 1;
-@@ -6504,8 +6521,39 @@ place_entity(struct cfs_rq *cfs_rq, stru
- 		if (weight > load)
+@@ -6505,6 +6517,30 @@
  			update_zero = true;
  	}
  
-+	if (unlikely(sysctl_sched_burst_penalty_enable &&
-+	    se->avg.wakeup_avg > WAKEUP_PENALTY_THRESHOLD &&
-+	    se->avg.util_avg < UTIL_LOW_THRESHOLD)) {
-+		bool do_punish = true;
-+		if (entity_is_task(se)) {
-+			struct task_struct *p = task_of(se);
-+			if (unlikely(sysctl_sched_burst_penalty_nice_strict && task_nice(p) < 0))
-+				do_punish = false;
-+		} else {
-+			do_punish = false;
-+		}
-+		if (do_punish) {
++	if ((flags & ENQUEUE_SLEEP_TIMEOUT) && entity_is_task(se) &&
++	    burst_timeout_task(task_of(se))) {
++		if (unlikely(sysctl_sched_burst_penalty_enable &&
++		    se->avg.wakeup_avg > WAKEUP_PENALTY_THRESHOLD &&
++		    se->avg.util_avg < UTIL_LOW_THRESHOLD)) {
 +			se->wakeup_penalty_count++;
 +			if (unlikely(sysctl_sched_burst_penalty_relief > 0 &&
 +			    se->wakeup_penalty_count >= sysctl_sched_burst_penalty_relief)) {
@@ -83,27 +306,79 @@
 +				if (se->vlag > 0)
 +					se->vlag -= se->vlag / 3;
 +			}
++		} else {
++			se->wakeup_penalty_count = 0;
 +		}
-+	} else {
-+		se->wakeup_penalty_count = 0;
 +	}
 +
  	se->vruntime = vruntime - lag;
  
  	if (update_zero)
- 		update_zero_vruntime(cfs_rq, -lag);
-@@ -6535,8 +6583,11 @@ static inline int cfs_rq_throttled(struc
+@@ -8135,7 +8171,7 @@
+ }
  
  static void
- enqueue_entity(struct cfs_rq *cfs_rq, struct sched_entity *se, int flags)
+-requeue_delayed_entity(struct cfs_rq *cfs_rq, struct sched_entity *se)
++requeue_delayed_entity(struct cfs_rq *cfs_rq, struct sched_entity *se, int timeout_flag)
  {
-+	if (flags & ENQUEUE_WAKEUP)
+ 	/*
+ 	 * se->sched_delayed should imply: se->on_rq == 1.
+@@ -8145,17 +8181,22 @@
+ 	WARN_ON_ONCE(!se->sched_delayed);
+ 	WARN_ON_ONCE(!se->on_rq);
+ 
++	/* This path can place before the usual PELT update. */
++	if (timeout_flag)
++		update_load_avg(cfs_rq, se, 0);
++
+ 	if (update_entity_lag(cfs_rq, se)) {
+ 		cfs_rq->h_nr_queued--;
+ 		if (se != cfs_rq->curr)
+ 			__dequeue_entity(cfs_rq, se);
+-		place_entity(cfs_rq, se, 0);
++		place_entity(cfs_rq, se, timeout_flag);
+ 		if (se != cfs_rq->curr)
+ 			__enqueue_entity(cfs_rq, se);
+ 		cfs_rq->h_nr_queued++;
+ 	}
+ 
+-	update_load_avg(cfs_rq, se, 0);
++	if (!timeout_flag)
++		update_load_avg(cfs_rq, se, 0);
+ 	clear_delayed(se);
+ }
+ 
+@@ -8225,6 +8266,12 @@
+ 	if (task_is_throttled(p) && enqueue_throttled_task(p))
+ 		return;
+ 
++	/* Count the leaf once, not the hierarchy or a later unthrottle. */
++	if ((flags & ENQUEUE_SLEEP_TIMEOUT) && burst_timeout_task(p))
 +		se->avg.wakeup_sum += 1024;
++	else
++		flags &= ~ENQUEUE_SLEEP_TIMEOUT;
 +
  	/*
- 	 * When enqueuing a sched_entity, we must:
- 	 *   - Update loads to have both entity and cfs_rq synced with now.
- 	 *   - For group_entity, update its runnable_weight to reflect the new
+ 	 * The code below (indirectly) updates schedutil which looks at
+ 	 * the cfs_rq utilization to select a frequency.
+@@ -8237,7 +8284,7 @@
+ 	update_curr_eevdf(cfs_rq);
+ 
+ 	if (flags & ENQUEUE_DELAYED) {
+-		requeue_delayed_entity(cfs_rq, se);
++		requeue_delayed_entity(cfs_rq, se, flags & ENQUEUE_SLEEP_TIMEOUT);
+ 		return;
+ 	}
+ 
+@@ -8257,7 +8304,7 @@
+ 		place_entity(cfs_rq, se, flags);
+ 
+ 	if (se->on_rq && se->sched_delayed)
+-		requeue_delayed_entity(cfs_rq, se);
++		requeue_delayed_entity(cfs_rq, se, 0);
+ 
+ 	weight = enqueue_hierarchy(p, flags);
+ 
 --- a/kernel/sched/pelt.c
 +++ b/kernel/sched/pelt.c
 @@ -116,8 +116,9 @@ accumulate_sum(u64 delta, struct sched_a
@@ -126,22 +401,49 @@
  
  /*
   * sched_entity:
+--- a/kernel/sched/sched.h
++++ b/kernel/sched/sched.h
+@@ -2609,6 +2609,7 @@
+ #define ENQUEUE_INITIAL		0x00080000
+ #define ENQUEUE_RQ_SELECTED	0x00100000
+ #define ENQUEUE_QUEUED		0x00200000
++#define ENQUEUE_SLEEP_TIMEOUT	0x00400000 /* fair placement for this TTWU only */
+ 
+ #define RETRY_TASK		((void *)-1UL)
+ 
+@@ -2833,6 +2834,14 @@
+ extern const struct sched_class fair_sched_class;
+ extern const struct sched_class idle_sched_class;
+ 
++static inline bool burst_timeout_task(struct task_struct *p)
++{
++	/* normal_policy() also admits SCHED_EXT when configured. */
++	return (p->policy == SCHED_NORMAL || p->policy == SCHED_BATCH ||
++		p->policy == SCHED_IDLE) && p->sched_class == &fair_sched_class &&
++		task_nice(p) >= 0 && !(READ_ONCE(p->flags) & (PF_KTHREAD | PF_IDLE | PF_EXITING));
++}
++
+ /*
+  * Iterate only active classes. SCX can take over all fair tasks or be
+  * completely disabled. If the former, skip fair. If the latter, skip SCX.
 --- a/kernel/sysctl.c
 +++ b/kernel/sysctl.c
-@@ -34,8 +34,12 @@ EXPORT_SYMBOL_GPL(sysctl_long_vals);
+@@ -34,8 +34,14 @@ EXPORT_SYMBOL_GPL(sysctl_long_vals);
  #ifdef CONFIG_USER_NS
  extern int unprivileged_userns_clone;
  #endif
  
 +extern unsigned int sysctl_sched_burst_penalty_enable;
-+extern unsigned int sysctl_sched_burst_penalty_nice_strict;
 +extern unsigned int sysctl_sched_burst_penalty_relief;
++
++/* Compatibility knob: negative nice is always exempt. */
++static int sysctl_sched_burst_penalty_nice_strict = 1;
 +
  /* Constants used for minimum and maximum */
  static const int ngroups_max = NGROUPS_MAX;
  static const int cap_last_cap = CAP_LAST_CAP;
  
-@@ -1453,8 +1457,35 @@ static const struct ctl_table sysctl_sub
+@@ -1453,8 +1459,35 @@ static const struct ctl_table sysctl_sub
  		.mode		= 0644,
  		.proc_handler	= proc_dointvec,
  	},
@@ -158,11 +460,11 @@
 +	{
 +		.procname	= "sched_burst_penalty_nice_strict",
 +		.data		= &sysctl_sched_burst_penalty_nice_strict,
-+		.maxlen		= sizeof(unsigned int),
++		.maxlen		= sizeof(int),
 +		.mode		= 0644,
 +		.proc_handler	= proc_dointvec_minmax,
-+		.extra1         = SYSCTL_ZERO,
-+		.extra2         = SYSCTL_ONE,
++		.extra1		= SYSCTL_ONE,
++		.extra2		= SYSCTL_ONE,
 +	},
 +	{
 +		.procname	= "sched_burst_penalty_relief",
@@ -177,3 +479,185 @@
  
  int __init sysctl_init_bases(void)
  {
+--- a/kernel/time/alarmtimer.c
++++ b/kernel/time/alarmtimer.c
+@@ -676,7 +676,7 @@
+ 
+ 	alarm->data = NULL;
+ 	if (task)
+-		wake_up_process(task);
++		wake_up_sleep_timeout(task);
+ }
+ 
+ /**
+--- a/kernel/time/hrtimer.c
++++ b/kernel/time/hrtimer.c
+@@ -2320,18 +2320,32 @@
+ /*
+  * Sleep related functions:
+  */
+-static enum hrtimer_restart hrtimer_wakeup(struct hrtimer *timer)
++static enum hrtimer_restart __hrtimer_wakeup(struct hrtimer *timer, bool sleep_timeout)
+ {
+ 	struct hrtimer_sleeper *t = container_of(timer, struct hrtimer_sleeper, timer);
+ 	struct task_struct *task = t->task;
+ 
+ 	t->task = NULL;
+-	if (task)
+-		wake_up_process(task);
++	if (task) {
++		if (sleep_timeout)
++			wake_up_sleep_timeout(task);
++		else
++			wake_up_process(task);
++	}
+ 
+ 	return HRTIMER_NORESTART;
+ }
+ 
++static enum hrtimer_restart hrtimer_wakeup(struct hrtimer *timer)
++{
++	return __hrtimer_wakeup(timer, false);
++}
++
++static enum hrtimer_restart hrtimer_sleep_timeout(struct hrtimer *timer)
++{
++	return __hrtimer_wakeup(timer, true);
++}
++
+ /**
+  * hrtimer_sleeper_start_expires - Start a hrtimer sleeper timer
+  * @sl:		sleeper to be started
+@@ -2361,7 +2375,7 @@
+ EXPORT_SYMBOL_GPL(hrtimer_sleeper_start_expires);
+ 
+ static void __hrtimer_setup_sleeper(struct hrtimer_sleeper *sl, clockid_t clock_id,
+-				    enum hrtimer_mode mode)
++				    enum hrtimer_mode mode, bool sleep_timeout)
+ {
+ 	/*
+ 	 * On PREEMPT_RT enabled kernels hrtimers which are not explicitly
+@@ -2387,7 +2401,8 @@
+ 			mode |= HRTIMER_MODE_HARD;
+ 	}
+ 
+-	__hrtimer_setup(&sl->timer, hrtimer_wakeup, clock_id, mode);
++	__hrtimer_setup(&sl->timer, sleep_timeout ? hrtimer_sleep_timeout : hrtimer_wakeup,
++			clock_id, mode);
+ 	sl->task = current;
+ }
+ 
+@@ -2401,10 +2416,18 @@
+ 				    enum hrtimer_mode mode)
+ {
+ 	debug_setup_on_stack(&sl->timer, clock_id, mode);
+-	__hrtimer_setup_sleeper(sl, clock_id, mode);
++	__hrtimer_setup_sleeper(sl, clock_id, mode, false);
+ }
+ EXPORT_SYMBOL_GPL(hrtimer_setup_sleeper_on_stack);
+ 
++/* Only for a deadline requested by the sleeping application itself. */
++void hrtimer_setup_sleep_timeout(struct hrtimer_sleeper *sl, clockid_t clock_id,
++				enum hrtimer_mode mode)
++{
++	debug_setup_on_stack(&sl->timer, clock_id, mode);
++	__hrtimer_setup_sleeper(sl, clock_id, mode, true);
++}
++
+ int nanosleep_copyout(struct restart_block *restart, struct timespec64 *ts)
+ {
+ 	switch(restart->nanosleep.type) {
+@@ -2464,7 +2487,7 @@
+ 	struct hrtimer_sleeper t;
+ 	int ret;
+ 
+-	hrtimer_setup_sleeper_on_stack(&t, restart->nanosleep.clockid, HRTIMER_MODE_ABS);
++	hrtimer_setup_sleep_timeout(&t, restart->nanosleep.clockid, HRTIMER_MODE_ABS);
+ 	hrtimer_set_expires(&t.timer, restart->nanosleep.expires);
+ 	ret = do_nanosleep(&t, HRTIMER_MODE_ABS);
+ 	destroy_hrtimer_on_stack(&t.timer);
+@@ -2477,7 +2500,7 @@
+ 	struct hrtimer_sleeper t;
+ 	int ret;
+ 
+-	hrtimer_setup_sleeper_on_stack(&t, clockid, mode);
++	hrtimer_setup_sleep_timeout(&t, clockid, mode);
+ 	hrtimer_set_expires_range_ns(&t.timer, rqtp, current->timer_slack_ns);
+ 	ret = do_nanosleep(&t, mode);
+ 	if (ret != -ERESTART_RESTARTBLOCK)
+--- a/kernel/time/sleep_timeout.c
++++ b/kernel/time/sleep_timeout.c
+@@ -176,18 +176,9 @@
+ }
+ EXPORT_SYMBOL(schedule_timeout_idle);
+ 
+-/**
+- * schedule_hrtimeout_range_clock - sleep until timeout
+- * @expires:	timeout value (ktime_t)
+- * @delta:	slack in expires timeout (ktime_t)
+- * @mode:	timer mode
+- * @clock_id:	timer clock to be used
+- *
+- * Details are explained in schedule_hrtimeout_range() function description as
+- * this function is commonly used.
+- */
+-int __sched schedule_hrtimeout_range_clock(ktime_t *expires, u64 delta,
+-					   const enum hrtimer_mode mode, clockid_t clock_id)
++static int __sched do_schedule_hrtimeout(ktime_t *expires, u64 delta,
++					enum hrtimer_mode mode, clockid_t clock_id,
++					bool user_poll)
+ {
+ 	struct hrtimer_sleeper t;
+ 
+@@ -208,7 +199,10 @@
+ 		return -EINTR;
+ 	}
+ 
+-	hrtimer_setup_sleeper_on_stack(&t, clock_id, mode);
++	if (user_poll)
++		hrtimer_setup_sleep_timeout(&t, clock_id, mode);
++	else
++		hrtimer_setup_sleeper_on_stack(&t, clock_id, mode);
+ 	hrtimer_set_expires_range_ns(&t.timer, *expires, delta);
+ 	hrtimer_sleeper_start_expires(&t, mode);
+ 
+@@ -222,6 +216,28 @@
+ 
+ 	return !t.task ? 0 : -EINTR;
+ }
++
++/* Only for poll/select/epoll waits with an application-supplied deadline. */
++int __sched schedule_user_poll_timeout(ktime_t *expires, u64 slack)
++{
++	return do_schedule_hrtimeout(expires, slack, HRTIMER_MODE_ABS, CLOCK_MONOTONIC, true);
++}
++
++/**
++ * schedule_hrtimeout_range_clock - sleep until timeout
++ * @expires:	timeout value (ktime_t)
++ * @delta:	slack in expires timeout (ktime_t)
++ * @mode:	timer mode
++ * @clock_id:	timer clock to be used
++ *
++ * Details are explained in schedule_hrtimeout_range() function description as
++ * this function is commonly used.
++ */
++int __sched schedule_hrtimeout_range_clock(ktime_t *expires, u64 delta,
++					   const enum hrtimer_mode mode, clockid_t clock_id)
++{
++	return do_schedule_hrtimeout(expires, delta, mode, clock_id, false);
++}
+ EXPORT_SYMBOL_GPL(schedule_hrtimeout_range_clock);
+ 
+ /**
+--- a/kernel/time/tick-internal.h
++++ b/kernel/time/tick-internal.h
+@@ -192,6 +192,8 @@
+ void clock_was_set_delayed(void);
+ 
+ void hrtimers_resume_local(void);
++void hrtimer_setup_sleep_timeout(struct hrtimer_sleeper *sl, clockid_t clock_id,
++				enum hrtimer_mode mode);
+ 
+ /* Since jiffies uses a simple TICK_NSEC multiplier
+  * conversion, the .shift value could be zero. However
