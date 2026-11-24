@@ -36,8 +36,8 @@ curl -L https://github.com/eebssk1/aio_tc_build/releases/latest/download/x86_64-
 mv x86_64-linux-gnu_l /opt/newcc_l
 chown -R root:root /opt/newcc_l
 else
-curl -L https://github.com/eebssk1/aio_tc_build/releases/download/20240425_llvm/llvm_18.1.4.tgz | tar -zxf -
-mv llvm_18.1.4 /opt/newclang
+curl -L https://github.com/eebssk1/aio_tc_build/releases/download/20261124_llvm/llvm_23.1.6.tar.bz2 | tar --bz -xf -
+mv llvm-* /opt/newclang
 chown -R root:root /opt/newclang
 fi
 
