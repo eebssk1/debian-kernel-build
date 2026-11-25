@@ -58,10 +58,11 @@
  endif
  
  ifdef CONFIG_FUNCTION_TRACER
-@@ -982,12 +982,21 @@
+@@ -1143,15 +1143,24 @@
+ export CC_FLAGS_FPU
  export CC_FLAGS_NO_FPU
  
- ifneq ($(CONFIG_FUNCTION_ALIGNMENT),0)
+-ifneq ($(CONFIG_FUNCTION_ALIGNMENT),0)
 -# Set the minimal function alignment. Use the newer GCC option
 -# -fmin-function-alignment if it is available, or fall back to -falign-funtions.
 -# See also CONFIG_CC_HAS_SANE_FUNCTION_ALIGNMENT.
@@ -70,21 +71,24 @@
 -else
 -KBUILD_CFLAGS += -falign-functions=$(CONFIG_FUNCTION_ALIGNMENT)
 -endif
++# Kconfig selects the architecture's alignment (or the requested debug
++# alignment); zero means no alignment class was selected.
++min_align := $(filter-out 0,$(CONFIG_FUNCTION_ALIGNMENT))
++ifneq ($(min_align),)
 +ifeq ($(CONFIG_DEBUG_FORCE_FUNCTION_ALIGN_32B_SOFT),y)
-+CONFIG_FUNCTION_ALIGNMENT = 24
++KBUILD_CFLAGS += $(call cc-option,-falign-functions=32:19:16:12,$(call cc-option,-falign-functions=24))
++else
++KBUILD_CFLAGS += $(call cc-option,-falign-functions=$(CONFIG_FUNCTION_ALIGNMENT))
 +endif
-+REAL_FUNCTION_ALIGNMENT = $(CONFIG_FUNCTION_ALIGNMENT)
-+ifeq ($(REAL_FUNCTION_ALIGNMENT), 24)
-+REAL_FUNCTION_ALIGNMENT = 32:19:16:12
++else ifeq ($(CONFIG_CC_OPTIMIZE_FOR_SIZE),y)
++min_align := 8
 +endif
-+ifeq ($(call cc-option,-falign-functions=$(REAL_FUNCTION_ALIGNMENT)),)
-+REAL_FUNCTION_ALIGNMENT = $(CONFIG_FUNCTION_ALIGNMENT)
++
++ifneq ($(min_align),)
++KBUILD_CFLAGS += $(call cc-option,-fmin-function-alignment=$(min_align))
 +endif
-+KBUILD_CFLAGS += -falign-functions=$(REAL_FUNCTION_ALIGNMENT)
-+ifeq ($(shell expr $(CONFIG_FUNCTION_ALIGNMENT) \> 7), 1)
-+KBUILD_CFLAGS += $(call cc-option, -fmin-function-alignment=8)
-+endif
-+ifeq ($(shell expr $(CONFIG_FUNCTION_ALIGNMENT) \> 23), 1)
++ifneq ($(filter 32 64,$(CONFIG_FUNCTION_ALIGNMENT)),)
 +KBUILD_CFLAGS += $(call cc-option, -flimit-function-alignment)
-+endif
  endif
+
+ # arch Makefile may override CC so keep this after arch Makefile is included
