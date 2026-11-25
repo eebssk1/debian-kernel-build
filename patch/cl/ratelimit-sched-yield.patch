@@ -1,20 +1,24 @@
 From 467904416b3786c9f2b29ca683d36cb2523ae7ce Mon Sep 17 00:00:00 2001
 From: Colin Ian King <colin.i.king@intel.com>
 Date: Thu, 17 Oct 2024 16:29:50 +0100
-Subject: [PATCH] sched: limit explicit yields per CPU
+Subject: [PATCH] sched: rate-limit only fair userspace sched_yield requests
 
-Run cond_resched() first, then admit up to four yields per CPU per 1 ms
-window before taking the rq lock. Both sched_yield(2) and kernel yield()
-use this path; yield_to() does not. Keep IRQs disabled from the clock
-sample through rq acquisition so the budget and runqueue belong to the
-same CPU. The donor, schedstats and schedule path are unchanged.
+Allow four explicit yields per CPU per 1 ms refill window, shared by
+SCHED_NORMAL, SCHED_BATCH and SCHED_IDLE callers in the fair class.
+Decide under the local rq lock so neither a remote class change nor CPU
+migration can separate the charge from the donor's class callback. If
+proxy execution splits caller and donor, both must qualify. Kernel yield
+and all exempt classes bypass the clock and budget entirely.
+
+On exhaustion unlock and retain a cond_resched() opportunity, but skip
+the yield statistic, class callback and explicit schedule(). Both paths
+return 0 to userspace; admission does not guarantee a task switch.
 
 Signed-off-by: Colin Ian King <colin.i.king@intel.com>
 ---
 --- a/kernel/sched/syscalls.c
 +++ b/kernel/sched/syscalls.c
-@@ -7,8 +7,9 @@
-  *  Copyright (C) 1991-2002  Linus Torvalds
+@@ -8,6 +8,7 @@
   *  Copyright (C) 1998-2024  Ingo Molnar, Red Hat
   */
  #include <linux/sched.h>
@@ -22,42 +26,82 @@ Signed-off-by: Colin Ian King <colin.i.king@intel.com>
  #include <linux/cpuset.h>
  #include <linux/sched/debug.h>
  
- #include <uapi/linux/sched/types.h>
-@@ -1332,14 +1333,36 @@ SYSCALL_DEFINE3(sched_getaffinity, pid_t
- 
+@@ -1333,13 +1334,50 @@
  	return ret;
  }
  
+-static void do_sched_yield(void)
 +#define YIELD_MAX_PER_MS	4
 +
 +static DEFINE_PER_CPU(u64, last_yield);
 +static DEFINE_PER_CPU(unsigned int, yield_budget);
 +
- static void do_sched_yield(void)
- {
- 	struct rq_flags rf;
- 	struct rq *rq;
-+	u64 now;
++static bool yield_limited_task(const struct task_struct *p)
++{
++	return p->sched_class == &fair_sched_class &&
++		(p->policy == SCHED_NORMAL || p->policy == SCHED_BATCH ||
++		 p->policy == SCHED_IDLE);
++}
 +
-+	cond_resched();
++/* Called with the local rq locked and IRQs disabled. */
++static bool take_yield_budget(void)
++{
++	u64 now = local_clock();
 +
-+	/* Charge the CPU that will yield, without locking its rq on denial. */
-+	local_irq_disable();
-+	now = local_clock();
 +	if (now - __this_cpu_read(last_yield) >= NSEC_PER_MSEC) {
 +		__this_cpu_write(last_yield, now);
 +		__this_cpu_write(yield_budget, YIELD_MAX_PER_MS);
 +	}
-+	if (!__this_cpu_read(yield_budget)) {
-+		local_irq_enable();
++	if (!__this_cpu_read(yield_budget))
++		return false;
++	__this_cpu_dec(yield_budget);
++	return true;
++}
++
++static void do_sched_yield(bool from_syscall)
+ {
+ 	struct rq_flags rf;
+ 	struct rq *rq;
+ 
+ 	rq = this_rq_lock_irq(&rf);
+ 
++	/* Under proxy execution the donor, not current, gets the callback. */
++	if (from_syscall && yield_limited_task(rq->donor) &&
++	    (rq->donor == current || yield_limited_task(current)) &&
++	    !take_yield_budget()) {
++		rq_unlock_irq(rq, &rf);
++		/* No explicit yield; retain a voluntary reschedule point. */
++		cond_resched();
 +		return;
 +	}
-+	__this_cpu_dec(yield_budget);
- 
--	rq = this_rq_lock_irq(&rf);
-+	rq = this_rq();
-+	rq_lock(rq, &rf);
- 
++
  	schedstat_inc(rq->yld_count);
  	rq->donor->sched_class->yield_task(rq);
+ 
+@@ -1353,14 +1391,14 @@
+ /**
+  * sys_sched_yield - yield the current processor to other threads.
+  *
+- * This function yields the current CPU to other tasks. If there are no
+- * other threads running on this CPU then this function will return.
++ * A rate-limited call skips the explicit yield. Even an admitted yield
++ * need not switch to another task.
+  *
+  * Return: 0.
+  */
+ SYSCALL_DEFINE0(sched_yield)
+ {
+-	do_sched_yield();
++	do_sched_yield(true);
+ 	return 0;
+ }
+ 
+@@ -1389,7 +1427,7 @@
+ void __sched yield(void)
+ {
+ 	set_current_state(TASK_RUNNING);
+-	do_sched_yield();
++	do_sched_yield(false);
+ }
+ EXPORT_SYMBOL(yield);
  
