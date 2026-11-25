@@ -1,0 +1,92 @@
+--- a/include/net/tcp.h
++++ b/include/net/tcp.h
+@@ -164,7 +164,7 @@
+ 
+ #define TCP_TIMEOUT_MIN_US (2*USEC_PER_MSEC) /* Min TCP timeout in microsecs */
+ 
+-#define TCP_TIMEOUT_INIT ((unsigned)(1*HZ))	/* RFC6298 2.1 initial RTO value	*/
++#define TCP_TIMEOUT_INIT ((unsigned)(HZ / 2))	/* Initial handshake RTO in ticks */
+ #define TCP_TIMEOUT_FALLBACK ((unsigned)(3*HZ))	/* RFC 1122 initial RTO value, now
+ 						 * used as a fallback RTO for the
+ 						 * initial data transmission if no
+--- a/net/ipv4/tcp.c
++++ b/net/ipv4/tcp.c
+@@ -348,41 +348,37 @@
+ 			      jiffies_to_msecs(jiffies - val));
+ }
+ 
+-/* Convert seconds to retransmits based on initial and max timeout */
+-static u8 secs_to_retrans(int seconds, int timeout, int rto_max)
++/* Select the first cumulative retry period covering the requested seconds.
++ * Keep the intervals in ticks: the initial timeout can be sub-second.
++ */
++static u8 secs_to_retrans(int seconds, u32 timeout, u32 rto_max)
+ {
+-	u8 res = 0;
+-
+-	if (seconds > 0) {
+-		int period = timeout;
++	u64 period = timeout;
++	u8 res = 1;
+ 
+-		res = 1;
+-		while (seconds > period && res < 255) {
+-			res++;
+-			timeout <<= 1;
+-			if (timeout > rto_max)
+-				timeout = rto_max;
+-			period += timeout;
+-		}
++	if (seconds <= 0)
++		return 0;
++	while (period < (u64)seconds * HZ && res < U8_MAX) {
++		res++;
++		timeout = min(timeout * 2, rto_max);
++		period += timeout;
+ 	}
+ 	return res;
+ }
+ 
+-/* Convert retransmits to seconds based on initial and max timeout */
+-static int retrans_to_secs(u8 retrans, int timeout, int rto_max)
++/* Report whole seconds only after accumulating the retry periods in ticks. */
++static int retrans_to_secs(u8 retrans, u32 timeout, u32 rto_max)
+ {
+-	int period = 0;
++	u64 period = 0;
+ 
+ 	if (retrans > 0) {
+ 		period = timeout;
+ 		while (--retrans) {
+-			timeout <<= 1;
+-			if (timeout > rto_max)
+-				timeout = rto_max;
++			timeout = min(timeout * 2, rto_max);
+ 			period += timeout;
+ 		}
+ 	}
+-	return period;
++	return div_u64(period, HZ);
+ }
+ 
+ static u64 tcp_compute_delivery_rate(const struct tcp_sock *tp)
+@@ -3943,8 +3939,7 @@
+ 	case TCP_DEFER_ACCEPT:
+ 		/* Translate value in seconds to number of retransmits */
+ 		WRITE_ONCE(icsk->icsk_accept_queue.rskq_defer_accept,
+-			   secs_to_retrans(val, TCP_TIMEOUT_INIT / HZ,
+-					   TCP_RTO_MAX / HZ));
++			   secs_to_retrans(val, TCP_TIMEOUT_INIT, TCP_RTO_MAX));
+ 		return 0;
+ 	case TCP_RTO_MAX_MS:
+ 		if (val < MSEC_PER_SEC || val > TCP_RTO_MAX_SEC * MSEC_PER_SEC)
+@@ -4543,8 +4538,7 @@
+ 		break;
+ 	case TCP_DEFER_ACCEPT:
+ 		val = READ_ONCE(icsk->icsk_accept_queue.rskq_defer_accept);
+-		val = retrans_to_secs(val, TCP_TIMEOUT_INIT / HZ,
+-				      TCP_RTO_MAX / HZ);
++		val = retrans_to_secs(val, TCP_TIMEOUT_INIT, TCP_RTO_MAX);
+ 		break;
+ 	case TCP_WINDOW_CLAMP:
+ 		val = READ_ONCE(tp->window_clamp);

@@ -1,5 +1,31 @@
 --- a/net/ipv4/tcp_bbr.c       2025-08-28 17:37:45.780881965 +0000
 +++ b/net/ipv4/tcp_bbr.c       2025-08-28 17:37:26.387883265 +0000
+@@ -125,10 +125,10 @@
+ 	u32	pacing_gain:10,	/* current gain for setting pacing rate */
+ 		cwnd_gain:10,	/* current gain for setting cwnd */
+ 		full_bw_reached:1,   /* reached full bw in Startup? */
+-		full_bw_cnt:2,	/* number of rounds without large bw gains */
++		full_bw_cnt:3,	/* number of rounds without large bw gains */
+ 		cycle_idx:2,	/* current index in pacing_gain cycle array */
+ 		has_seen_rtt:1, /* have we seen an RTT sample yet? */
+-		unused_2:6;
++		unused_2:5;
+ 	u32	prior_cwnd;	/* prior cwnd upon entering loss recovery */
+ 	u32	full_bw;	/* recent bw, to estimate if pipe is full */
+ 
+@@ -140,10 +140,9 @@
+ 		extra_acked_win_idx:1,	/* current index in extra_acked array */
+ 	/* BBR v3 state: */
+ 		full_bw_now:1,		/* recently reached full bw plateau? */
+-		startup_ecn_rounds:2,	/* consecutive hi ECN STARTUP rounds */
++		startup_ecn_rounds:3,	/* consecutive hi ECN STARTUP rounds */
+ 		loss_in_cycle:1,	/* packet loss in this cycle? */
+-		ecn_in_cycle:1,		/* ECN in this cycle? */
+-		unused_3:1;
++		ecn_in_cycle:1;		/* ECN in this cycle? */
+ 	u32	loss_round_delivered; /* scb->tx.delivered ending loss round */
+ 	u32	undo_bw_lo;	     /* bw_lo before latest losses */
+ 	u32	undo_inflight_lo;    /* inflight_lo before latest losses */
 @@ -181,16 +181,16 @@
  };
  

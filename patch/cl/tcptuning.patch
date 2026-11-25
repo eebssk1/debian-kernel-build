@@ -29,7 +29,7 @@
  				  * state, about 60 seconds	*/
  #define TCP_FIN_TIMEOUT	TCP_TIMEWAIT_LEN
                                   /* BSD style FIN_WAIT2 deadlock breaker.
-@@ -149,25 +149,25 @@
+@@ -149,20 +149,20 @@
  				  */
  #define TCP_FIN_TIMEOUT_MAX (120 * HZ) /* max TCP_LINGER2 value (two minutes) */
  
@@ -55,9 +55,8 @@
  
  #define TCP_TIMEOUT_MIN_US (2*USEC_PER_MSEC) /* Min TCP timeout in microsecs */
  
--#define TCP_TIMEOUT_INIT ((unsigned)(1*HZ))	/* RFC6298 2.1 initial RTO value	*/
+@@ -170,4 +170,4 @@
 -#define TCP_TIMEOUT_FALLBACK ((unsigned)(3*HZ))	/* RFC 1122 initial RTO value, now
-+#define TCP_TIMEOUT_INIT ((unsigned)(HZ/2))	/* RFC6298 2.1 initial RTO value	*/
 +#define TCP_TIMEOUT_FALLBACK ((unsigned)(HZ/5*7))	/* RFC 1122 initial RTO value, now
  						 * used as a fallback RTO for the
  						 * initial data transmission if no
